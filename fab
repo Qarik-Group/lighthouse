@@ -1,0 +1,9 @@
+#!/bin/sh
+
+for test_file in $(cat validations)
+do
+    run_file="tests/${test_file}"
+    [[ -x ${run_file} ]] && {
+        ${run_file}
+    }
+done
