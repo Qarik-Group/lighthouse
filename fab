@@ -1,4 +1,25 @@
-#!/bin/sh
+#!/bin/bash
+
+# parameters  debug
+#             trace
+#             fabdir where tests can be found
+#             configdir where data files can be found
+
+while (($# > 0))
+do
+    case "${1}" in
+        --debug|-d) ;;
+        debug=) ;;
+        --trace|-t) ;;
+        trace=) ;;
+        --fabdir|-f) ;;
+        fabdir=) ;;
+        --configdir|-c) ;;
+        configdir=) ;;
+        *) echo unknown parameter ${arg} ;;
+    esac
+    shift
+done
 
 for test_file in $(cat validations)
 do

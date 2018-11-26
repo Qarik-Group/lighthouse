@@ -1,0 +1,17 @@
+[
+    {
+       "org": "starkandwayne",
+       "space": "$(echo oh no)'www-staging",
+       "apps": [
+           "ad-training"
+       ]
+    },
+    {
+       "org": "starkandwayne",
+       "space": "www-staging",
+       "apps": [
+           "sw-staffing",
+           "ad-training"
+       ]
+    }
+]

@@ -2,8 +2,8 @@
 
 query_cf_api()
 {
-    declare next_url="${1:?Missing cf api url}"
-    declare result_file="${2:?Missing result filename}"
+    declare next_url="${1:?Missing cf api url $(caller 0)}"
+    declare result_file="${2:?Missing result filename $(caller 0)}"
     declare -i i=0
     declare dataset
     declare -a datasets

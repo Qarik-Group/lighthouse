@@ -1,0 +1,20 @@
+[
+    {
+        "org": "cfdev-org",
+        "spaces":
+        [
+            "system",
+            "Idonotexist",
+            "cfdev-space",
+            "cfdev-test"
+        ]
+    },
+    {
+        "org": "starkandwayne",
+        "spaces":
+        [
+            "www-staging",
+            "www production"
+        ]
+    }
+]
