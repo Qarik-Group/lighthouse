@@ -1,0 +1,34 @@
+[
+
+    "default":{
+        "total_memory":{
+            "operator": "==",
+            "value": 3,
+            "unit": "G" 
+            },
+        "instance_memory":{
+            "operator": "==",
+            "value": 3,
+            "unit": "G" 
+            },
+        "routes":{
+            "operator": "==",
+            "value": 3
+            },
+        "service_instances":{
+            "operator": "==",
+            "value": 3
+            },
+        "app_instances":{
+            "operator": "==",
+            "value": 3
+            },
+        "reserved_route_ports":{
+            "operator": "==",
+            "value": 3
+            },`
+        "allow_paid_service_plans":{
+            "value": true
+            }
+    }
+]
