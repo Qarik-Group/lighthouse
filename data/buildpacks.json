@@ -1,0 +1,44 @@
+[
+    {
+       "stack": "cflinuxfs2",
+       "buildpacks": [
+            "staticfile_buildpack",
+            "java_buildpack",
+            "ruby_buildpack",
+            "dotnet_core_buildpack",
+            "nodejs_buildpack",
+            "go_buildpack",
+            "python_buildpack",
+            "php_buildpack",
+            "binary_buildpack"
+       ]
+    },
+    {
+       "stack": "cflinuxfs3",
+       "buildpacks": [
+            "staticfile_buildpack",
+            "java_buildpack",
+            "ruby_buildpack",
+            "dotnet_core_buildpack",
+            "nodejs_buildpack",
+            "go_buildpack",
+            "python_buildpack",
+            "php_buildpack",
+            "binary_buildpack"
+       ]
+    },
+    {
+       "stack": "windows2016",
+       "buildpacks": [
+            "hwc_buildpack",
+            "binary_buildpack"
+       ]
+    },
+    {
+       "stack": "",
+       "buildpacks": [
+            "dotnet_core_buildpack_beta"
+       ]
+    }
+]
+
