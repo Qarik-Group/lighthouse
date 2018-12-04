@@ -1,12 +1,7 @@
-.PHONY: logout login
-
-install:
-	bin/install
+.PHONY: logout login start
 
 login:
 	bin/login
-
-setup: install login start
 
 start:
 	bin/start
