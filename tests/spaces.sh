@@ -27,14 +27,14 @@ get_org_space_url()
 {
     declare org="${1:?Missing org argument}"
     query_cf_api "/v2/organizations?q=name:${org}" ${org_dataset}
-    jq --arg org "${org}" -r '.[].entity|select(.name==$org)|.spaces_url' "/tmp/fab/${org_dataset}"
+    jq --arg org "${org}" -r '.[].entity|select(.name==$org)|.spaces_url' "/tmp/lh/${org_dataset}"
 }
 
 does_space_exist()
 {
     declare space="${1:?Missing space argument}"
     declare dataset="${2:?Missing organizationdataset argument}"
-    jq --arg space "${space}" -r '.[]|.entity|select(.name==$space)|.name==$space' "/tmp/fab/${dataset}"
+    jq --arg space "${space}" -r '.[]|.entity|select(.name==$space)|.name==$space' "/tmp/lh/${dataset}"
 }
 
 get_test_array_length()
@@ -95,7 +95,7 @@ else
     not_ok  $(fab_validate_description)
 fi
 
-rm -f /tmp/fab/${org_dataset}
-rm -f /tmp/fab/${spaces_dataset}
+rm -f /tmp/lh/${org_dataset}
+rm -f /tmp/lh/${spaces_dataset}
 
 exit 0

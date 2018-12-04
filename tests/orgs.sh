@@ -20,7 +20,7 @@ fab_validate_description()
 
 org_exists() {
     declare org="${1:?Missing org argument}"
-    jq ".[]|.entity|select(.name==\"${org}\")|true" /tmp/fab/${dataset}
+    jq ".[]|.entity|select(.name==\"${org}\")|true" /tmp/lh/${dataset}
 }
 
 fab_test() {
@@ -47,4 +47,4 @@ unset -f fab_validate_input
 unset -f fab_validate_description
 
 
-rm -f /tmp/fab/${dataset}
+rm -f /tmp/lh/${dataset}

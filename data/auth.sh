@@ -1,2 +1,0 @@
-export FAB_CF_USERNAME="admin" 
-export FAB_CF_PASSWORD="C3fyKwkwObPTq3JD2pQvxpRCp28uhyllXTrJiXaLTPtSguCAvS6BNpmpBsrLDVl2"

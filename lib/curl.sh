@@ -8,18 +8,18 @@ query_cf_api()
     declare dataset
     declare -a datasets
     ((i=0))
-    mkdir -p /tmp/fab/apps.$$
-    dataset="/tmp/fab/apps.$$/dataset.${i}"
+    mkdir -p /tmp/lh/apps.$$
+    dataset="/tmp/lh/apps.$$/dataset.${i}"
     while [[ "${next_url}" != "null" ]]; do
         cf curl "${next_url}" > "${dataset}"
         # TODO error handling
         datasets[i]="${dataset}"
         next_url=$(jq -r -c ".next_url" "${dataset}")
         ((i += 1))
-        dataset="/tmp/fab/apps.$$/dataset.${i}"
+        dataset="/tmp/lh/apps.$$/dataset.${i}"
     done
 
     # TODO error handling if no files created
-    jq -s 'map(.resources[])' "${datasets[@]}" > "/tmp/fab/${result_file}"
-    rm -rf /tmp/fab/apps.$$
+    jq -s 'map(.resources[])' "${datasets[@]}" > "/tmp/lh/${result_file}"
+    rm -rf /tmp/lh/apps.$$
 }

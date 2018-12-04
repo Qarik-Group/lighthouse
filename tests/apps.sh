@@ -29,14 +29,14 @@ get_org_space_url()
 {
     declare org="${1:?Missing org argument}"
     query_cf_api "/v2/organizations?q=name:${org}" "${org_dataset}"
-    jq --arg org "${org}" -r '.[].entity|select(.name==$org)|.spaces_url' "/tmp/fab/${org_dataset}"
+    jq --arg org "${org}" -r '.[].entity|select(.name==$org)|.spaces_url' "/tmp/lh/${org_dataset}"
 }
 
 does_space_exist()
 {
     declare space="${1:?Missing space argument}"
     declare dataset="${2:?Missing organization dataset argument}"
-    jq --arg space "${space}" -r '.[]|.entity|select(.name==$space)|.name==$space' "/tmp/fab/${dataset}"
+    jq --arg space "${space}" -r '.[]|.entity|select(.name==$space)|.name==$space' "/tmp/lh/${dataset}"
 }
 
 get_space_apps_url()
@@ -44,14 +44,14 @@ get_space_apps_url()
     declare space_url="${1:?Missing org argument}"
     declare space="${2:?Missing space argument}"
     query_cf_api "${spaces_url}" "${spaces_dataset}"
-    jq --arg space "${space}" -r '.[].entity|select(.name==$space)|.apps_url' "/tmp/fab/${spaces_dataset}"
+    jq --arg space "${space}" -r '.[].entity|select(.name==$space)|.apps_url' "/tmp/lh/${spaces_dataset}"
 }
 
 does_app_exist()
 {
     declare app="${1:?Missing space argument}"
     declare dataset="${2:?Missing apps dataset argument}"
-    jq --arg app "${app}" -r '.[]|.entity|select(.name==$app)|.name==$app' "/tmp/fab/${dataset}"
+    jq --arg app "${app}" -r '.[]|.entity|select(.name==$app)|.name==$app' "/tmp/lh/${dataset}"
 }
 
 get_test_array_length()
@@ -126,8 +126,8 @@ else
     not_ok  $(fab_validate_description)
 fi
 
-rm -f /tmp/fab/${org_dataset}
-rm -f /tmp/fab/${spaces_dataset}
-rm -f /tmp/fab/${apps_dataset}
+rm -f /tmp/lh/${org_dataset}
+rm -f /tmp/lh/${spaces_dataset}
+rm -f /tmp/lh/${apps_dataset}
 
 exit 0
