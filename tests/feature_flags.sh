@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/usr/bin/env bash
 
 # TODO add test that authorization was done already
 # TODO add trap for cleanup
