@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 (support/clear-auth.sh)
 
@@ -8,7 +8,7 @@
 # TODO Do we Use CF API interface to get json results?
 # TODO Do we use perl to be consistent with genesis?
 
-cf api "${FAB_CF_API}" 
+cf api --skip-ssl-validation "${FAB_CF_API}" 
 
 . data/auth.sh
 

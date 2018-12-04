@@ -1,7 +1,11 @@
-# cf-readiness
+# lighthouse
 
-Create a file data/auth.sh with your credentials.
+Lighthouse: near friendly shores.
 
+With lighthouse you can run a quick series of readiness tests to make sure things will be able to have safe harbor on your Cloud Foundry platform.
 
-FAB_CF_USERNAME="<username>"
-FAB_CF_PASSWORD="<password>"
+## Setup
+
+```bash
+make setup
+```
