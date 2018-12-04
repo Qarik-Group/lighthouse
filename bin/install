@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-set -eu
-
-brew install jq
-brew install cloudfoundry/tap/cf-cli
-brew install cloudfoundry/tap/bosh-cli
