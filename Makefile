@@ -8,3 +8,5 @@ start:
 
 logout:
 	bin/logout
+
+test: login start
