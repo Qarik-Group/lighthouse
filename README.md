@@ -8,17 +8,17 @@ With lighthouse you can run a quick series of readiness tests to make sure thing
 
 ### Prerequisites
 
-Install 
+Install the following command-line tools. 
 
 * [jq](https://stedolan.github.io/jq/download/)
 * [cf-cli](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html)
 * [bosh-cli](https://bosh.io/docs/cli-v2-install/)
 
-## Setup
+### Setup
 
 ```bash
 git clone https://github.com/krutten/lighthouse.git
 ```
 
-## Configure
+### Configure
 

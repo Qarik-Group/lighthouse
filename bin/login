@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-(support/clear-auth.sh)
-
 . data/env.sh
 
 # TODO Add parameter checking
