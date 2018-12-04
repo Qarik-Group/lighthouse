@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 
-. data/env.sh
+. config.env
 
 # TODO Add parameter checking
 # TODO Do we Use CF API interface to get json results?
 # TODO Do we use perl to be consistent with genesis?
 
-cf api --skip-ssl-validation "${FAB_CF_API}" 
+cf api --skip-ssl-validation "${LH_CF_API}" 
 
-. data/auth.sh
+CF_USERNAME="${LH_CF_USERNAME}" CF_PASSWORD="${LH_CF_PASSWORD}" cf auth
 
-CF_USERNAME="${FAB_CF_USERNAME}" CF_PASSWORD="${FAB_CF_PASSWORD}" cf auth
-
-cf target -o "${FAB_CF_ORG}" -s "${FAB_CF_SPACE}"
+cf target -o "${LH_CF_ORG}" -s "${LH_CF_SPACE}"
 

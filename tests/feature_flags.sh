@@ -3,7 +3,7 @@
 # TODO add test that authorization was done already
 # TODO add trap for cleanup
 
-. support/output.sh
+. lib/output.sh
 
 dataset="/tmp/feature_flags.$$"
 validation_data="data/feature_flags.json"

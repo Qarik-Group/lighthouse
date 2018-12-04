@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-. support/curl.sh
-. support/output.sh
+. lib/curl.sh
+. lib/output.sh
 
 
 org_dataset="organization_$$"

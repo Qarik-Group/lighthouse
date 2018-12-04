@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # https://apidocs.cloudfoundry.org/6.1.0/organizations/list_all_organizations.html
-. support/output.sh
-. support/curl.sh
+. lib/output.sh
+. lib/curl.sh
 
 
 test_data="data/orgs.json"
