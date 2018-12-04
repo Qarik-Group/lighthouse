@@ -1,14 +1,25 @@
 #!/usr/bin/env bash
 
+# Read in the configuration settings for this environment.
+
 . config.env
 
-# TODO Add parameter checking
-# TODO Do we Use CF API interface to get json results?
-# TODO Do we use perl to be consistent with genesis?
+# Ask the user for a their password.
+# We echo "\n" to have the output below start on a fresh line.
+
+echo -n Please enter your CF CLI Password: 
+read -s LH_CF_PASSWORD
+echo "\n"
+
+# Set the API endpoint.
 
 cf api --skip-ssl-validation "${LH_CF_API}" 
 
+# Authenticate to CF.
+
 CF_USERNAME="${LH_CF_USERNAME}" CF_PASSWORD="${LH_CF_PASSWORD}" cf auth
+
+# Set the default target, configured in the config.env file.
 
 cf target -o "${LH_CF_ORG}" -s "${LH_CF_SPACE}"
 
