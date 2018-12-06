@@ -11,4 +11,4 @@ echo "then I ran cf.sh"
 
 echo "------------------"
 
-source tests/cf.sh
+. tests/cf.sh

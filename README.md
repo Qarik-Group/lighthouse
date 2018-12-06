@@ -33,11 +33,11 @@ Open the `config.env` to add your passwords and correct settings.  For example, 
 ```env
 ## Cloud Foundry
 
-LH_CF_USERNAME="admin"
-LH_CF_PASSWORD=""
-     LH_CF_API="https://api.system.xjkevin.scalecf.net"
-     LH_CF_ORG=system
-   LH_CF_SPACE=dev
+CF_USERNAME="admin"
+CF_PASSWORD=""
+     CF_API="https://api.system.xjkevin.scalecf.net"
+     CF_ORG=system
+   CF_SPACE=dev
 ```
 
 ## Usage

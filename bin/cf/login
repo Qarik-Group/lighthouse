@@ -6,7 +6,7 @@ set -eu
 
 if [ -f config.env ];
 then
-    source config.env
+    . config.env
 else
     echo "The config.env file does not exist.  Please copy config.env.example and reconfigure."
     exit 1
@@ -14,13 +14,13 @@ fi
 
 # Set the API endpoint.
 
-cf api --skip-ssl-validation "${LH_CF_API}" 
+cf api --skip-ssl-validation "${CF_API}" 
 
 # Authenticate to CF.
 
-CF_USERNAME="${LH_CF_USERNAME}" CF_PASSWORD="${LH_CF_PASSWORD}" cf auth
+CF_USERNAME="${CF_USERNAME}" CF_PASSWORD="${CF_PASSWORD}" cf auth
 
 # Set the default target, configured in the config.env file.
 
-cf target -o "${LH_CF_ORG}" -s "${LH_CF_SPACE}"
+cf target -o "${CF_ORG}" -s "${CF_SPACE}"
 

@@ -11,4 +11,4 @@ echo "then I ran bosh.sh"
 
 echo "------------------"
 
-source tests/bosh.sh
+. tests/bosh.sh
