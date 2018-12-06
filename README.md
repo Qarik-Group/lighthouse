@@ -50,9 +50,6 @@ Go here: [http://gnuwin32.sourceforge.net/packages/make.htm](http://gnuwin32.sou
 
 </details>
 
-
-
-
 ### Get Software
 
 2. Clone this repo to your local computer.
