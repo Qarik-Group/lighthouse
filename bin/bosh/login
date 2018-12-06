@@ -12,10 +12,6 @@ else
     exit 1
 fi
 
-# Use the source, Luke
-
-. lib/bosh/env.sh
-
 # Create an alias
 
 bosh alias-env bosh-env -e ${BOSH_ENVIRONMENT} --ca-cert ${BOSH_CA_CERT}

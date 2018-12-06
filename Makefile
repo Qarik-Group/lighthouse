@@ -7,14 +7,13 @@ bosh:
 
 bosh-login:
 	@bin/bosh/login
-	@. lib/bosh/env.sh
 
 bosh-logout:
 	@bin/bosh/logout
 
 check: cf-login
 
-cf:
+cf: 
 	@bin/cf/run
 
 cf-login:
