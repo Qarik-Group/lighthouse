@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -eu
+
+echo "and I ran"
+echo "I ran so far away"
+
+echo "-----------------"
+
+echo "then I ran cf.sh"
+
+echo "------------------"
+
+source tests/cf.sh

@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 
-. lib/curl.sh
-. lib/output.sh
-
+# set -eu
 
 org_dataset="organization_$$"
 spaces_dataset="spaces_$$"
 apps_dataset="apps_$$"
 validation_data="data/apps.json"
-
 
 fab_validate_data()
 {
@@ -129,5 +126,3 @@ fi
 rm -f /tmp/lh/${org_dataset}
 rm -f /tmp/lh/${spaces_dataset}
 rm -f /tmp/lh/${apps_dataset}
-
-exit 0

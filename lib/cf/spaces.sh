@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-. lib/curl.sh
-. lib/output.sh
-
+# set -eu
 
 org_dataset="organization_$$"
 spaces_dataset="spaces_$$"
@@ -97,5 +95,3 @@ fi
 
 rm -f /tmp/lh/${org_dataset}
 rm -f /tmp/lh/${spaces_dataset}
-
-exit 0

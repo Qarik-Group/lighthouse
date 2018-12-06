@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# set -eu
+
 query_cf_api()
 {
     declare next_url="${1:?Missing cf api url $(caller 0)}"
@@ -23,3 +25,4 @@ query_cf_api()
     jq -s 'map(.resources[])' "${datasets[@]}" > "/tmp/lh/${result_file}"
     rm -rf /tmp/lh/apps.$$
 }
+

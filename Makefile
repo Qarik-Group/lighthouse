@@ -1,8 +1,11 @@
 .PHONY: logout login start
 
-all: login start
+all: logout login cf
 
 check: login
+
+cf:
+	@bin/cf
 
 login:
 	@bin/login
@@ -10,5 +13,3 @@ login:
 logout:
 	@bin/logout
 
-start:
-	@bin/start

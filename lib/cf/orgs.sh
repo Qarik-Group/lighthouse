@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 
-# https://apidocs.cloudfoundry.org/6.1.0/organizations/list_all_organizations.html
-. lib/output.sh
-. lib/curl.sh
-
+# set -eu
 
 test_data="data/orgs.json"
 dataset="organizations_$$"
@@ -45,6 +42,5 @@ unset -f org_exists
 unset -f fab_test
 unset -f fab_validate_input
 unset -f fab_validate_description
-
 
 rm -f /tmp/lh/${dataset}
