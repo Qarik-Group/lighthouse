@@ -20,7 +20,7 @@ We also assume you have a Vault backend to target which we'll use in the [author
 
 ### Install Make
 
-There are different ways to use `make`, that depend on your operating system.  If you already have it, skip this.
+There are different ways to use `make`, that depend on your operating system.  If you already have it, skip to [get software](#get-software) this.
 
 <details><summary>macOS:</summary>
 
