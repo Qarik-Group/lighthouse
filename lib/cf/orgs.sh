@@ -2,7 +2,7 @@
 
 # set -eu
 
-test_data="data/orgs.json"
+test_data="data/cf/orgs.json"
 dataset="organizations_$$"
 fab_validate_data()
 {

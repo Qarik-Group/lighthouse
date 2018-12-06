@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -eu
+
+# Read in the configuration settings for this environment.
+
+if [ -f config.env ];
+then
+    . config.env
+else
+    echo "The config.env file does not exist.  Please copy config.env.example and reconfigure."
+    exit 1
+fi
+
+# Create an alias
+
+bosh alias-env bosh-env -e ${BOSH_ENVIRONMENT} --ca-cert ${BOSH_CA_CERT}
+
+# Log into BOSH_ENVIRONMENT
+
+bosh login -e bosh-env --client=${BOSH_CLIENT} --client-secret=${BOSH_CLIENT_SECRET}

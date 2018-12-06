@@ -1,15 +1,25 @@
-.PHONY: logout login start
+.PHONY: bosh bosh-login bosh-logout cf cf-logout cf-login
 
-all: logout login cf
+all: cf-logout cf-login cf
 
-check: login
+bosh:
+	@bin/bosh/run
 
-cf:
-	@bin/cf
+bosh-login:
+	@bin/bosh/login
 
-login:
-	@bin/login
+bosh-logout:
+	@bin/bosh/logout
 
-logout:
-	@bin/logout
+check: cf-login
+
+cf: 
+	@bin/cf/run
+
+cf-login:
+	@bin/cf/login
+
+cf-logout:
+	@bin/cf/logout
+
 

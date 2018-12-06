@@ -13,6 +13,8 @@ Install the following command-line tools.
 * [jq](https://stedolan.github.io/jq/download/)
 * [cf-cli](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html)
 * [bosh-cli](https://bosh.io/docs/cli-v2-install/)
+* [safe]()
+* [make]
 
 ### Get Software
 
@@ -20,25 +22,11 @@ Install the following command-line tools.
 git clone https://github.com/krutten/lighthouse.git
 ```
 
-### Configure
+### Ensure they are logged into safe
 
-An example configuration file is provided in the repository.   This is to prevent the storage of passwords in your repository.
+TODO ...
 
-```bash
-cp config.env.example config.env
-```
-
-Open the `config.env` to add your passwords and correct settings.  For example, here's how you'd configure Cloud Foundry:
-
-```env
-## Cloud Foundry
-
-LH_CF_USERNAME="admin"
-LH_CF_PASSWORD=""
-     LH_CF_API="https://api.system.xjkevin.scalecf.net"
-     LH_CF_ORG=system
-   LH_CF_SPACE=dev
-```
+Give error messsages about config if they are not logged in.
 
 ## Usage
 
