@@ -1,15 +1,15 @@
-.PHONY: logout login start
+.PHONY: cf logout login
 
-all: logout login cf
+all: cf-logout cf-login cf
 
 check: login
 
 cf:
-	@bin/cf
+	@bin/cf/run
 
-login:
-	@bin/login
+cf-login:
+	@bin/cf/login
 
-logout:
-	@bin/logout
+cf-logout:
+	@bin/cf/logout
 

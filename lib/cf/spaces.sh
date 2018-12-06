@@ -4,7 +4,7 @@
 
 org_dataset="organization_$$"
 spaces_dataset="spaces_$$"
-validation_data="data/spaces.json"
+validation_data="data/cf/spaces.json"
 
 
 fab_validate_data()
