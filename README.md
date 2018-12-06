@@ -22,16 +22,30 @@ git clone https://github.com/krutten/lighthouse.git
 
 ### Configure
 
-1. Open the `config.env` file.
-2. Make changes to the variables.
-3. Test a login by running `make login`.
+An example configuration file is provided in the repository.   This is to prevent the storage of passwords in your repository.
 
-A password prompt will appear, put in your password and continue.  Then if the login succeeds you're all set up.
+```bash
+cp config.env.example config.env
+```
+
+Open the `config.env` to add your passwords and correct settings.
+
+```env
+# Config.env: Setting to locate and sign in to resources.
+
+## Cloud Foundry
+
+LH_CF_USERNAME="admin"
+LH_CF_PASSWORD=""
+     LH_CF_API="https://api.system.xjkevin.scalecf.net"
+     LH_CF_ORG=system
+   LH_CF_SPACE=dev
+```
 
 ## Usage
 
-Once set up, flip the switch and turn on your lighthouse.  Run `make test` to run your tests and light the way home.
+Once set up, flip the switch and turn on your lighthouse.  Run `make all` to run your tests and light the way home.
 
 ```bash
-make test
+make all
 ```

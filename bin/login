@@ -4,13 +4,6 @@
 
 . config.env
 
-# Ask the user for a their password.
-# We echo "\n" to have the output below start on a fresh line.
-
-echo -n Please enter your CF CLI Password: 
-read -s LH_CF_PASSWORD
-echo "\n"
-
 # Set the API endpoint.
 
 cf api --skip-ssl-validation "${LH_CF_API}" 

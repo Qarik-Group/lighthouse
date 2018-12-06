@@ -1,12 +1,14 @@
 .PHONY: logout login start
 
-login:
-	bin/login
+all: login start
 
-start:
-	bin/start
+check: login
+
+login:
+	@bin/login
 
 logout:
-	bin/logout
+	@bin/logout
 
-test: login start
+start:
+	@bin/start
