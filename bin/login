@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 
+set -eu
+
 # Read in the configuration settings for this environment.
 
-. config.env
+if [ -f config.env ];
+then
+    source config.env
+else
+    echo "The config.env file does not exist.  Please copy config.env.example and reconfigure."
+    exit 1
+fi
 
 # Set the API endpoint.
 
