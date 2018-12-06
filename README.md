@@ -20,7 +20,7 @@ We also assume you have a Vault backend to target which we'll use in the [author
 
 ### Install Make
 
-There are different ways to use `make`, that depend on your operating system.  If you already have it, skip to [get software](#get-software) this.
+There are different ways to use `make`, that depend on your operating system.  If you already have it, skip to [get software](#get-software).
 
 <details><summary>macOS:</summary>
 
@@ -28,7 +28,7 @@ There are different ways to use `make`, that depend on your operating system.  I
 xcode-select --install
 ```
 
-</details><br/>
+</details>
 
 <details><summary>Ubuntu:</summary>
 
@@ -36,7 +36,7 @@ xcode-select --install
 sudo apt-get install build-essential
 ```
 
-</details><br/>
+</details>
 
 <details><summary>centOS:</summary>
 
@@ -44,13 +44,13 @@ sudo apt-get install build-essential
 yum groupinstall "Development Tools"
 ```
 
-</details><br/>
+</details>
 
 <details><summary>Windows:</summary>
 
 Go here: [http://gnuwin32.sourceforge.net/packages/make.htm](http://gnuwin32.sourceforge.net/packages/make.htm)
 
-</details><br/>
+</details>
 
 ### Get Software
 
