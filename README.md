@@ -13,8 +13,44 @@ Install the following command-line tools.
 * [jq](https://stedolan.github.io/jq/download/)
 * [cf-cli](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html)
 * [bosh-cli](https://bosh.io/docs/cli-v2-install/)
-* [safe]()
-* [make]
+* [safe](https://github.com/starkandwayne/safe#attention-homebrew-users)
+* make
+
+We also assume you have a Vault backend to target which we'll use in the [authorize safe](#authorize-safe) section below.
+### Install Make
+
+There are different ways to use `make`, that depend on your operating system.  If you already have it, skip this.
+
+<details><summary>macOS:</summary>
+
+```bash
+xcode-select --install
+```
+
+</details><br/>
+
+<details><summary>Ubuntu:</summary>
+
+```bash
+sudo apt-get install build-essential
+```
+
+</details><br/>
+
+<details><summary>centOS:</summary>
+
+```bash
+yum groupinstall "Development Tools"
+```
+
+</details><br/>
+
+<details><summary>Windows:</summary>
+
+Go here: http://gnuwin32.sourceforge.net/packages/make.htm
+
+
+</details><br/>
 
 ### Get Software
 
@@ -22,11 +58,19 @@ Install the following command-line tools.
 git clone https://github.com/krutten/lighthouse.git
 ```
 
-### Ensure they are logged into safe
+### Authorize Safe
 
-TODO ...
+Create a target to safe.
 
-Give error messsages about config if they are not logged in.
+```bash
+safe -k target https://10.200.130.4 lab
+```
+
+Then login to safe, with your token.
+
+```bash
+safe auth
+```
 
 ## Usage
 
