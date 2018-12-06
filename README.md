@@ -17,6 +17,7 @@ Install the following command-line tools.
 * make
 
 We also assume you have a Vault backend to target which we'll use in the [authorize safe](#authorize-safe) section below.
+
 ### Install Make
 
 There are different ways to use `make`, that depend on your operating system.  If you already have it, skip this.
@@ -47,8 +48,7 @@ yum groupinstall "Development Tools"
 
 <details><summary>Windows:</summary>
 
-Go here: http://gnuwin32.sourceforge.net/packages/make.htm
-
+Go here: [http://gnuwin32.sourceforge.net/packages/make.htm](http://gnuwin32.sourceforge.net/packages/make.htm)
 
 </details><br/>
 
