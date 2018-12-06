@@ -8,7 +8,7 @@ With lighthouse, you can run a quick series of readiness tests to make sure thin
 
 ### Prerequisites
 
-Install the following command-line tools. 
+Install the following command-line tools.
 
 * [jq](https://stedolan.github.io/jq/download/)
 * [cf-cli](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html)
@@ -28,7 +28,7 @@ An example configuration file is provided in the repository.   This is to preven
 cp config.env.example config.env
 ```
 
-Open the `config.env` to add your passwords and correct settings.
+Open the `config.env` to add your passwords and correct settings.  For example, here's how you'd configure Cloud Foundry:
 
 ```env
 ## Cloud Foundry
