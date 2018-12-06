@@ -18,7 +18,7 @@ With lighthouse, you can run a quick series of readiness tests to make sure thin
 
 ### Install Make
 
-There are different ways to use `make`, that depend on your operating system.  If you already have it, skip to [get software](#get-software).
+You'll install `make` based on what operating system you have.  If you already have it, skip to [get software](#get-software).
 
 <details><summary>macOS:</summary>
 
