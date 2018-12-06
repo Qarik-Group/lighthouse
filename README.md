@@ -31,8 +31,6 @@ cp config.env.example config.env
 Open the `config.env` to add your passwords and correct settings.
 
 ```env
-# Config.env: Setting to locate and sign in to resources.
-
 ## Cloud Foundry
 
 LH_CF_USERNAME="admin"
