@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+
+# Define colors for output.
           BLACK="\e[0;30m"
             RED="\e[0;31m"
           GREEN="\e[0;32m"
@@ -22,26 +24,32 @@
      BKGD_WHITE="\e[47m"
     SAVE_CURSOR="\e[s"
  RESTORE_CURSOR="\e[u"
+
+# Format the results of test messages.
+
+# When a test passes
+
 ok() {
     declare message="$@"
     declare status="PASSED"
-    # printf "${RESTORE_CURSOR}%-70s   ${GREEN}%-7s${RESET}\n" "${message}" "${status}"
-    # printf "${GREEN}%-7s${RESET}   %-70s\n" "${status}" "${message}"
     printf "${GREEN}%-7s${RESET}\n" "${status}"
     return 0
 }
 
+# when a test fails
+# TODO: how can a test be red and yellow, just because it has a message?
+
 not_ok() {
     declare message="$@"
     declare status="FAILED"
-    # printf "${RESTORE_CURSOR}%-70s   ${RED}%-7s${RESET}\n" "${message}" "${status}"
-    # printf "${RED}%-7s${RESET}   %-70s\n" "${status}" "${message}"
     printf "${RED}%-7s${RESET}\n" "${status}"
     [[ -n "${message}" ]] && {
-        printf "${YELLOW}REASON${RESET}  %-.70s\n" "${message}"
+        printf "${YELLOW}REASON${RESET} %-.70s\n" "${message}"
     }
     return 0
 }
+
+# TODO: What is an "active" test?
 
 active() {
     declare message="$@"

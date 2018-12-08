@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 
-set -eu
+set -eux
 
-# Read in the configuration settings for this environment.
+# Generate the certificat file for BOSH_CA_CERT
 
-if [ -f config.env ];
-then
-    . config.env
-else
-    echo "The config.env file does not exist.  Please copy config.env.example and reconfigure."
-    exit 1
-fi
+cat <(bosh int <(safe get secret/xjkevin/bosh/ssl/ca) --path /certificate) > certs/bosh-ssl.crt
+
+# Set static configuration and configuration from safe here
+
+  BOSH_ENVIRONMENT="10.200.195.1"
+      BOSH_CA_CERT=certs/bosh-ssl.crt
+       BOSH_CLIENT="admin"
+BOSH_CLIENT_SECRET=$(bosh int <(safe get secret/xjkevin/bosh/users/admin) --path /password)
 
 # Create an alias
 
