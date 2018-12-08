@@ -28,6 +28,7 @@ ok() {
     # printf "${RESTORE_CURSOR}%-70s   ${GREEN}%-7s${RESET}\n" "${message}" "${status}"
     # printf "${GREEN}%-7s${RESET}   %-70s\n" "${status}" "${message}"
     printf "${GREEN}%-7s${RESET}\n" "${status}"
+    return 0
 }
 
 not_ok() {
@@ -39,11 +40,13 @@ not_ok() {
     [[ -n "${message}" ]] && {
         printf "${YELLOW}REASON${RESET}  %-.70s\n" "${message}"
     }
+    return 0
 }
 
 active() {
     declare message="$@"
     declare status="ACTIVE"
     printf "${YELLOW}%-7s${RESET} %-.70s\r" "${status}" "${message}"
+    return 0
 }
 

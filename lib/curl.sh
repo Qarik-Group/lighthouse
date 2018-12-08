@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# set -eu
-
 query_cf_api()
 {
     declare next_url="${1:?Missing cf api url $(caller 0)}"
@@ -9,7 +7,6 @@ query_cf_api()
     declare -i i=0
     declare dataset
     declare -a datasets
-    ((i=0))
     mkdir -p /tmp/lh/apps.$$
     dataset="/tmp/lh/apps.$$/dataset.${i}"
     while [[ "${next_url}" != "null" ]]; do
