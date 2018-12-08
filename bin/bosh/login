@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -eux
-
 # Generate the certificat file for BOSH_CA_CERT
 
 cat <(bosh int <(safe get secret/xjkevin/bosh/ssl/ca) --path /certificate) > certs/bosh-ssl.crt

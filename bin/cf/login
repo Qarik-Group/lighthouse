@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -eu
-
 # Set static configuration and configuration from safe here
 
 CF_USERNAME="admin"
