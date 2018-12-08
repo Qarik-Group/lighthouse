@@ -82,7 +82,7 @@ Let's first run a command to test that tool is connected to your authencation ba
 make check
 ```
 
-<details><summary>A successful <code>make check</code> will login to BOSH and Cloud Foundry:</summary>
+<p><details><summary>A successful <code>make check</code> will login to BOSH and Cloud Foundry:</summary>
 
 ```bash
 Using environment '10.200.195.1' as anonymous user
@@ -118,7 +118,7 @@ org:            system
 space:          dev
 ```
 
-</details>
+</details></p>
 
 Once set up, flip the switch and turn on your lighthouse.  Run `make all` to run your tests and light the way home.
 
