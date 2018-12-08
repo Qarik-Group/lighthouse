@@ -11,7 +11,7 @@ bosh-login:
 bosh-logout:
 	@bin/bosh/logout
 
-check: cf-login
+check: bosh-login cf-login
 
 cf: 
 	@bin/cf/run

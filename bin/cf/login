@@ -2,15 +2,13 @@
 
 set -eu
 
-# Read in the configuration settings for this environment.
+# Set static configuration and configuration from safe here
 
-if [ -f config.env ];
-then
-    . config.env
-else
-    echo "The config.env file does not exist.  Please copy config.env.example and reconfigure."
-    exit 1
-fi
+CF_USERNAME="admin"
+CF_PASSWORD=$(bosh int <(safe get secret/xjkevin/cf/admin_user) --path /password)
+     CF_API="https://api.system.xjkevin.scalecf.net"
+     CF_ORG="system"
+   CF_SPACE="dev"
 
 # Set the API endpoint.
 
