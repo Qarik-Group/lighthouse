@@ -1,4 +1,4 @@
-.PHONY: bosh bosh-login bosh-logout cf cf-logout cf-login
+.PHONY: bosh bosh-login bosh-logout check-vault cf cf-logout cf-login
 
 all: cf-logout cf-login cf
 
@@ -11,7 +11,12 @@ bosh-login:
 bosh-logout:
 	@bin/bosh/logout
 
-check: bosh-login cf-login
+check: check-vault
+
+check-all: check-vault bosh-login cf-login
+
+check-vault:
+	@bin/vault/check
 
 cf: 
 	@bin/cf/run
@@ -21,5 +26,4 @@ cf-login:
 
 cf-logout:
 	@bin/cf/logout
-
 
