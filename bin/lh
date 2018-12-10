@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+bosh_login() {
+
+    # Generate the certificat file for BOSH_CA_CERT
+
+    cat <(bosh int <(safe get secret/xjkevin/bosh/ssl/ca) --path /certificate) > certs/bosh-ssl.crt
+
+    # Set static configuration and configuration from safe here
+
+    BOSH_ENVIRONMENT="10.200.195.1"
+        BOSH_CA_CERT=certs/bosh-ssl.crt
+        BOSH_CLIENT="admin"
+    BOSH_CLIENT_SECRET=$(bosh int <(safe get secret/xjkevin/bosh/users/admin) --path /password)
+
+    # Create an alias
+
+    bosh alias-env bosh-env -e ${BOSH_ENVIRONMENT} --ca-cert ${BOSH_CA_CERT}
+
+    # Log into BOSH_ENVIRONMENT
+
+    bosh login -e bosh-env --client=${BOSH_CLIENT} --client-secret=${BOSH_CLIENT_SECRET}
+
+}
+
+bosh_logout() {
+
+    unset BOSH_ENVIRONMENT
+    unset BOSH_CA_CERT
+    unset BOSH_CLIENT
+    unset BOSH_CLIENT_SECRET
+
+    bosh logout -e bosh-env
+
+    rm -f certs/bosh-ssl.crt
+
+}
+
+bosh_run() {
+
+    echo "and I ran"
+    echo "I ran so far away"
+
+    echo "-----------------"
+
+    echo "then I ran bosh.sh"
+
+    echo "------------------"
+
+    . tests/bosh.sh
+
+}
+
+cf_login() {
+
+    # Set static configuration and configuration from safe here
+
+    CF_USERNAME="admin"
+    CF_PASSWORD=$(bosh int <(safe get secret/xjkevin/cf/admin_user) --path /password)
+        CF_API="https://api.system.xjkevin.scalecf.net"
+        CF_ORG="system"
+    CF_SPACE="dev"
+
+    # Set the API endpoint.
+
+    cf api --skip-ssl-validation "${CF_API}" 
+
+    # Authenticate to CF.
+
+    CF_USERNAME="${CF_USERNAME}" CF_PASSWORD="${CF_PASSWORD}" cf auth
+
+    # Set the default target.
+
+    cf target -o "${CF_ORG}" -s "${CF_SPACE}"
+
+}
+
+cf_logout() {
+
+    cf logout
+
+    cf api --unset
+
+}
+
+cf_run() {
+
+    echo "and I ran"
+    echo "I ran so far away"
+
+    echo "-----------------"
+
+    echo "then I ran cf.sh"
+
+    echo "------------------"
+
+    . tests/cf.sh
+
+}
+
+check() {
+
+    safe get secret/handshake
+
+}
+
+usage() {
+    echo "Lighthouse: It's clear to come ashore."
+    echo "  login -- "
+    exit 1
+}
+
+case "$1" in
+    check)
+        check
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac

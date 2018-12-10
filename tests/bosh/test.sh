@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-set -eux
+# set -eux
 
 . lib/output.sh
 
-ok
+active "cause I said so"

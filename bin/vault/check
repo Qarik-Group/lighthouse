@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-check_vault() {
-    safe get secret/handshake
-}
-
-check_vault
