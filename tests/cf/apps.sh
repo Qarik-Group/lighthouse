@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# set -eu
+. lib/curl.sh
+. lib/output.sh
 
 org_dataset="organization_$$"
 spaces_dataset="spaces_$$"

@@ -4,4 +4,4 @@
 
 . lib/output.sh
 
-active "cause I said so"
+ok "this test is alright by me"

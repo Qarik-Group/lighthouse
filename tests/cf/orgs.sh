@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# set -eu
+. lib/curl.sh
+. lib/output.sh
 
 test_data="data/cf/orgs.json"
 dataset="organizations_$$"
