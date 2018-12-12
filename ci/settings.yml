@@ -1,0 +1,15 @@
+---
+meta:
+  target:  hplab
+  url:     https://concourse.hp.scalecf.net
+
+  vault:
+    url:   https://10.250.4.48
+    token: (( vault "secret/pipeline/vault:token" ))
+
+  github:
+    owner:  krutten
+    repo:   lighthouse
+    branch: pipelines
+    private_key:  (( vault "secret/pipelines/shared/github/genesis-bot:private" ))
+

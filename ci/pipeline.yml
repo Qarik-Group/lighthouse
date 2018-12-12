@@ -1,0 +1,85 @@
+---
+#
+# ci/pipeline.yml
+#
+# Pipeline structure file for a Genesis Release pipeline
+#
+# DO NOT MAKE CHANGES TO THIS FILE.  Instead, modify
+# ci/settings.yml and override what needs overridden.
+# This uses spruce, so you have some options there.
+#
+# author:  James Hunt <james@niftylogic.com>
+# created: 2018-01-23
+
+meta:
+  target:   (( param "Please identify the name of the target Concourse CI" ))
+  url:      (( param "Please specify the full url of the target Concourse CI" ))
+  pipeline: lighthouse
+
+  vault:
+    url:   (( param "Please provide the address of your Vault" ))
+    token: (( param "Please provide a Vault Token" ))
+
+  image:
+    name: starkandwayne/genesis_ci
+    tag: latest
+
+  git:
+    email: ci@starkandwayne.com
+    name:  Stark & Wayne CI Bot
+
+  github:
+    uri:          (( concat "git@github.com:" meta.github.owner "/" meta.github.repo ))
+    owner:        (( param "Please specify the name of the user / organization that owns the Github repository" ))
+    repo:         (( param "Please specify the name of the Github repository" ))
+    branch:       pipeline
+    private_key:  (( param "Please generate an SSH Deployment Key for this repo and specify it here" ))
+
+#groups:
+#  - name: (( grab meta.pipeline ))
+#    jobs:
+#      - vault-test
+#      - cf-login-test
+#      - bosh-login-test
+#      - cf-test
+#      - bosh-test
+
+jobs:
+  - name: vault-test
+    public: true
+    plan:
+    - name: main
+      do:
+      - name: get
+        aggregate:
+        - { get: git, trigger: true }
+      - name: testflights
+        aggregate:
+        - name: testflight
+          task: testflight
+          config:
+            platform: linux
+            image_resource:
+              type: docker-image
+              source:
+                repository: (( grab meta.image.name ))
+                tag:        (( grab meta.image.tag ))
+            inputs:
+              - { name: git, path: kit }
+            run:
+              path: ./kit/ci/scripts/check_safe
+              args: []
+            params:
+              GENESIS_HONOR_ENV:    1
+              VAULT_URI:            (( grab meta.vault.url ))
+              VAULT_TOKEN:          (( grab meta.vault.token ))
+
+
+resources:
+  - name: git
+    type: git
+    source:
+      uri:         (( grab meta.github.uri ))
+      branch:      (( grab meta.github.branch ))
+      private_key: (( grab meta.github.private_key ))
+
