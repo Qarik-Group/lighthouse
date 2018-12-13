@@ -2,7 +2,7 @@
 
 bosh_login() {
 
-    # Generate the certificat file for BOSH_CA_CERT
+    # Generate the certificate file for BOSH_CA_CERT
 
     cat <(bosh int <(safe get secret/xjkevin/bosh/ssl/ca) --path /certificate) > certs/bosh-ssl.crt
 
@@ -38,16 +38,13 @@ bosh_logout() {
 
 bosh_run() {
 
-    echo "and I ran"
-    echo "I ran so far away"
-
     echo "-----------------"
 
-    echo "then I ran bosh.sh"
+    echo "Running BOSH Tests"
 
     echo "------------------"
 
-    . tests/bosh.sh
+    . tests/bosh/included
 
 }
 
@@ -57,9 +54,9 @@ cf_login() {
 
     CF_USERNAME="admin"
     CF_PASSWORD=$(bosh int <(safe get secret/xjkevin/cf/admin_user) --path /password)
-        CF_API="https://api.system.xjkevin.scalecf.net"
-        CF_ORG="system"
-    CF_SPACE="dev"
+         CF_API="https://api.system.xjkevin.scalecf.net"
+         CF_ORG="system"
+       CF_SPACE="dev"
 
     # Set the API endpoint.
 
@@ -80,26 +77,18 @@ cf_logout() {
     cf logout
 
     cf api --unset
-j
+
 }
 
 cf_run() {
 
-    echo "and I ran"
-    echo "I ran so far away"
-
     echo "-----------------"
 
-    echo "then I ran all the cf tests"
+    echo "Running CF Tests"
 
     echo "------------------"
 
-    for files in /tests/cf/*.sh; do
-    echo ${files
-        # for ((test=0; test=<$files test++)); do
-        # echo ${test}
-        # done
-    done
+    . tests/cf/included
 
 }
 
@@ -123,25 +112,56 @@ check_dependencies() {
     done
 }
 
+safe_login() {
+    safe -k target https://10.200.130.4 lab
+    echo "Please enter your vault token..."
+    safe auth
+}
+
+safe_logout() {
+    safe target delete lab
+}
+
+
 check() {
     check_dependencies
     check_safe
 }
 
+login() {
+    safe_login
+    bosh_login
+    cf_login
+}
+
+logout() {
+    safe_logout
+    bosh_logout
+    cf_logout
+}
+
 test() {
     echo $PWD
-    # bosh_run
+    bosh_run
     cf_run
 }
 
-
 usage() {
     echo "Lighthouse: It's clear to come ashore."
-    echo "  check -- are we ready to go"
+    echo "  login  -- sign into vault with safe, then BOSH and CF with vault."
+    echo "  logout -- logout of safe, BOSH and CF."
+    echo "  check  -- check for dependencies or signed in."
+    echo "  test   -- run all tests."
     exit 1
 }
 
 case "$1" in
+    login)
+        login
+        ;;
+    logout)
+        logout
+        ;;
     test)
         test
         ;;
