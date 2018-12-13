@@ -2,7 +2,7 @@
 
 Lighthouse, near friendly shores.
 
-With lighthouse, you can run a quick series of readiness tests to make sure things will be able to have a safe harbor on your Cloud Foundry platform.
+With lighthouse, you can run a quick series of tests to make sure things will be able to have a safe harbor on your Cloud Foundry platform.
 
 ## Getting Started
 
@@ -60,7 +60,7 @@ git clone https://github.com/krutten/lighthouse.git
 
 ### Authorize Safe
 
-3. Create a target to safe.
+3. Create a target to your vault with safe.
 
 ```bash
 safe -k target https://10.200.130.4 lab

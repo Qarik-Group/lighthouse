@@ -11,7 +11,7 @@ bosh-login:
 bosh-logout:
 	@bin/bosh/logout
 
-check: check-vault
+check: bin/lh check
 
 check-all: check-vault bosh-login cf-login
 

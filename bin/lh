@@ -80,7 +80,7 @@ cf_logout() {
     cf logout
 
     cf api --unset
-
+j
 }
 
 cf_run() {
@@ -90,27 +90,61 @@ cf_run() {
 
     echo "-----------------"
 
-    echo "then I ran cf.sh"
+    echo "then I ran all the cf tests"
 
     echo "------------------"
 
-    . tests/cf.sh
+    for files in /tests/cf/*.sh; do
+    echo ${files
+        # for ((test=0; test=<$files test++)); do
+        # echo ${test}
+        # done
+    done
 
 }
 
-check() {
+check_safe() {
+    echo "Checking vault connection..."
 
     safe get secret/handshake
 
 }
 
+# loop through the list of required CLI software.
+
+check_dependencies() {
+    echo "Checking software dependencies..."
+    
+    for command in "jq" "cf" "bosh" "safe" "make"; do
+        type ${command} > /dev/null
+        if [[ $? > 0 ]]; then
+            echo "The ${command} is not found.  Please install before proceeding."
+        fi
+    done
+}
+
+check() {
+    check_dependencies
+    check_safe
+}
+
+test() {
+    echo $PWD
+    # bosh_run
+    cf_run
+}
+
+
 usage() {
     echo "Lighthouse: It's clear to come ashore."
-    echo "  login -- "
+    echo "  check -- are we ready to go"
     exit 1
 }
 
 case "$1" in
+    test)
+        test
+        ;;
     check)
         check
         ;;
