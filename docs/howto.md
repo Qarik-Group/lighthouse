@@ -1,5 +1,25 @@
 # HOWTO
 
+## Run Tests
+
+To run all tests.
+
+```bash
+bin/lh test
+```
+
+List the available types of tests.
+
+```bash
+bin/lh test -h
+```
+
+Run a specific test. Like only the Cloud Foundry tests.
+
+```bin
+bin/lh test cf
+```
+
 ## Include and Exclude Tests
 
 To either include or exclude a test from the `test all` run, simply edit the `included` file in the subfolder of each test group.

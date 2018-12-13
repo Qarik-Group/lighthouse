@@ -36,7 +36,7 @@ bosh_logout() {
 
 }
 
-bosh_run() {
+bosh_tests() {
 
     echo "-----------------"
 
@@ -80,7 +80,7 @@ cf_logout() {
 
 }
 
-cf_run() {
+cf_tests() {
 
     echo "-----------------"
 
@@ -142,8 +142,15 @@ logout() {
 
 test() {
     echo $PWD
-    bosh_run
-    cf_run
+    bosh_tests
+    cf_tests
+}
+
+test_usage() {
+    echo "       test: run all tests."
+    echo "  test bosh: only the bosh tests."
+    echo "    test cf: only cloud foundry tests."
+    exit 1
 }
 
 usage() {
@@ -163,7 +170,24 @@ case "$1" in
         logout
         ;;
     test)
-        test
+        shift
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -h|--help|help)
+                    test_usage
+                    exit 0
+                    ;;            
+                -cf|--cloud-foundry|cf)
+                    cf_tests
+                    exit 0
+                    ;;
+                -b|--bosh|bosh)
+                    bosh_tests
+                    exit 0
+                    ;;                    
+            esac
+        done
+        test "$@"
         ;;
     check)
         check
