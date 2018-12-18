@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -eu
+
+: ${VAULT_URI:?required}
+: ${VAULT_TOKEN:?required}
+
+header() {
+    echo
+    echo "###############################################"
+    echo
+    echo $*
+    echo
+}
+
+header "Setting up safe..."
+safe target lighthouse-vault "$VAULT_URI" -k
+echo "$VAULT_TOKEN" | safe auth token
+safe read secret/handshake
+
+header "Testing BOSH login"
+
+
+exit 0
+
