@@ -101,7 +101,6 @@ fab_test()
 
         query_cf_api "${apps_url}" "${apps_dataset}"
 
-
         for app in "${apps[@]}"
         do
             active "Does application ${app} exist in space  ${space}"
