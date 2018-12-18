@@ -2,8 +2,9 @@
 
 set -eu
 
-: ${VAULT_URI:?required}
+: ${VAULT_ADDR:?required}
 : ${VAULT_TOKEN:?required}
+: ${VAULT_ALIAS:?required}
 
 header() {
     echo
@@ -14,7 +15,7 @@ header() {
 }
 
 header "Setting up safe..."
-safe target lighthouse-vault "$VAULT_URI" -k
+safe target "$VAULT_ALIAS" "$VAULT_ADDR" -k
 echo "$VAULT_TOKEN" | safe auth token
 safe read secret/handshake
 

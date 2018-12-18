@@ -20,6 +20,7 @@ meta:
   vault:
     url:   (( param "Please provide the address of your Vault" ))
     token: (( param "Please provide a Vault Token" ))
+    path : (( param "Please provide a Vault path/prefix such as 'secret/lab'"  ))
 
   image:
     name: starkandwayne/genesis_ci
@@ -66,15 +67,19 @@ jobs:
               repository: (( grab meta.image.name ))
               tag:        (( grab meta.image.tag ))
           inputs:
-            - { name: git, path: kit }
+            - { name: git, path: lighthouse }
           run:
-            path: ./kit/ci/scripts/check_safe
+            path: ./lighthouse/ci/scripts/check_safe
             args: []
           params:
-            GENESIS_HONOR_ENV:    1
-            VAULT_URI:            (( grab meta.vault.url ))
-            VAULT_TOKEN:          (( grab meta.vault.token ))
-            LIGHTHOUSE_ENV:       (( grab meta.envname ))
+            VAULT_ADDR: (( grab meta.vault.url ))
+            VAULT_ALIAS: (( grab meta.envname ))
+            VAULT_PATH: (( grab meta.vault.path ))
+            VAULT_TOKEN: (( grab meta.vault.token ))
+            VAULT_SKIP_VERIFY: 1
+            BOSH_ENVIRONMENT: (( grab meta.envname ))
+
+
 - name: cf-login-test
   public: true
   plan:
@@ -92,14 +97,17 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: kit }
+          - { name: git, path: lighthouse }
         run:
-          path: ./kit/ci/scripts/test-cf-login
+          path: ./lighthouse/ci/scripts/test-cf-login
           args:  [ ]
         params:
-          VAULT_URI:            (( grab meta.vault.url ))
-          VAULT_TOKEN:          (( grab meta.vault.token ))
-          LIGHTHOUSE_ENV:       (( grab meta.envname ))
+          VAULT_ADDR: (( grab meta.vault.url ))
+          VAULT_ALIAS: (( grab meta.envname ))
+          VAULT_PATH: (( grab meta.vault.path ))
+          VAULT_TOKEN: (( grab meta.vault.token ))
+          VAULT_SKIP_VERIFY: 1
+          BOSH_ENVIRONMENT: (( grab meta.envname ))
 - name: cf-orgs-test
   public: true
   plan:
@@ -117,14 +125,17 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: kit }
+          - { name: git, path: lighthouse }
         run:
-          path: ./kit/ci/scripts/test-cf-org
+          path: ./lighthouse/ci/scripts/test-cf-org
           args: []
         params:
-           VAULT_URI:            (( grab meta.vault.url ))
-           VAULT_TOKEN:          (( grab meta.vault.token ))
-           LIGHTHOUSE_ENV:       (( grab meta.envname ))
+          VAULT_ADDR: (( grab meta.vault.url ))
+          VAULT_ALIAS: (( grab meta.envname ))
+          VAULT_PATH: (( grab meta.vault.path ))
+          VAULT_TOKEN: (( grab meta.vault.token ))
+          VAULT_SKIP_VERIFY: 1
+          BOSH_ENVIRONMENT: (( grab meta.envname ))
 - name: bosh-login-test
   public: true
   plan:
@@ -132,6 +143,7 @@ jobs:
     do:
     - get: git
       passed: [ vault-test ]
+      trigger: true
     - task: bosh-login-test
       config:
         platform: linux
@@ -141,15 +153,17 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: kit }
+          - { name: git, path: lighthouse }
         run:
-          path: ./kit/ci/scripts/test-bosh-login
+          path: ./lighthouse/ci/scripts/test-bosh-login
           args: []
         params:
-          VAULT_URI:            (( grab meta.vault.url ))
-          VAULT_TOKEN:          (( grab meta.vault.token ))
-          LIGHTHOUSE_ENV:       (( grab meta.envname ))
-
+          VAULT_ADDR: (( grab meta.vault.url ))
+          VAULT_ALIAS: (( grab meta.envname ))
+          VAULT_PATH: (( grab meta.vault.path ))
+          VAULT_TOKEN: (( grab meta.vault.token ))
+          VAULT_SKIP_VERIFY: 1
+          BOSH_ENVIRONMENT: (( grab meta.envname ))
 
 
 resources:

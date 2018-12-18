@@ -14,7 +14,7 @@ header() {
 }
 
 header "Setting up safe..."
-safe target lighthouse-vault "$VAULT_URI" -k
+safe target "$VAULT_ALIAS" "$VAULT_ADDR" -k
 echo "$VAULT_TOKEN" | safe auth token
 safe read secret/handshake
 
@@ -22,7 +22,7 @@ header "Testing Cloud Foundry login"
 pwd
 ls -la
 
-. ./kit/bin/lh tests
+. ./kit/bin/lh login 
 
 exit 0
 
