@@ -42,6 +42,12 @@ bin/lh login
 <p><details><summary>A successful <code>bin/lh login</code> looks like this :</summary>
 
 ```bash
+$ bin/lh login
+Now targeting lab at https://10.200.130.4
+
+Please enter your vault token...
+Authenticating against  at https://10.200.130.4
+Token:
 Using environment '10.200.195.1' as anonymous user
 
 Name      xjkevin-bosh
@@ -88,43 +94,32 @@ bin/lh test
 <p><details><summary>A successful <code>bin/lh test</code> looks like this :</summary>
 
 ```bash
-$ bin/lh login
-Now targeting lab at https://10.200.130.4
-
-Please enter your vault token...
-Authenticating against  at https://10.200.130.4
-Token:
-Using environment '10.200.195.1' as anonymous user
-
-Name      xjkevin-bosh
-UUID      7fc1393a-05b8-4312-a000-05f532a32465
-Version   268.2.0 (00000000)
-CPI       vsphere_cpi
-Features  compiled_package_cache: disabled
-          config_server: enabled
-          local_dns: enabled
-          power_dns: disabled
-          snapshots: disabled
-User      (not logged in)
-
-Succeeded
-Successfully authenticated with UAA
-
-Succeeded
-Setting api endpoint to https://api.system.xjkevin.scalecf.net...
-OK
-
-api endpoint:   https://api.system.xjkevin.scalecf.net
-api version:    2.114.0
-API endpoint: https://api.system.xjkevin.scalecf.net
-Authenticating...
-OK
-Use 'cf target' to view or set your target org and space.
-api endpoint:   https://api.system.xjkevin.scalecf.net
-api version:    2.114.0
-user:           admin
-org:            system
-space:          dev
+$ bin/lh test
+-----------------
+Running BOSH Tests
+------------------
+PASSED
+-----------------
+Running CF Tests
+------------------
+FAILED  Application data  validation for org 'starkandwayne'
+REASON Org does not exist
+FAILED  Application data  validation for org 'starkandwayne'
+REASON Org does not exist
+FAILED  Is feature flag diego_docker enabled?
+FAILED  Is feature flag set_roles enabled?
+REASON Feature flag set_roles does not exist
+PASSED  Is feature flag env_var_visibility enabled?
+PASSED  Is feature flag service_instance_sharing disabled?
+FAILED  Is feature flag hide_marketplace_from_unauthenticated_users disabled?
+REASON Feature flag hide_marketplace_from_unauthenticated_users does not exis
+FAILED  Does org starkandwayne exist?
+FAILED  Does org Idonotexist exist?
+FAILED  Does org cfdev-org exist?
+FAILED  Does the expected spaces exist in org cfdev-org?
+REASON Org does not exit
+FAILED  Does the expected spaces exist in org starkandwayne?
+REASON Org does not exit
 ```
 
 </details></p>
