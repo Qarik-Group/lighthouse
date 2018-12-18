@@ -1,2 +1,2 @@
 certs/*
-.envrc
+config.env
