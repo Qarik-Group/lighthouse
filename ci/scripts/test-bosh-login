@@ -2,8 +2,9 @@
 
 set -eu
 
-: ${VAULT_URI:?required}
+: ${VAULT_ADDR:?required}
 : ${VAULT_TOKEN:?required}
+: ${VAULT_ALIAS:?required}
 
 header() {
     echo

@@ -2,8 +2,9 @@
 
 set -eu
 
-: ${VAULT_URI:?required}
+: ${VAULT_ADDR:?required}
 : ${VAULT_TOKEN:?required}
+: ${VAULT_ALIAS:?required}
 
 header() {
     echo
@@ -22,7 +23,7 @@ header "Testing Cloud Foundry login"
 pwd
 ls -la
 
-. ./kit/bin/lh login 
+. ./lighthouse/bin/lh login 
 
 exit 0
 
