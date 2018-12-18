@@ -5,7 +5,7 @@
 
 . lib/output.sh
 
-dataset="/tmp/feature_flags.$$"
+dataset="/tmp/lh/feature_flags.$$"
 validation_data="data/cf/feature_flags.json"
 
 fab_validate_data()
@@ -76,9 +76,12 @@ fab_test()
     done
 }
 
-[[ $(fab_validate_data) == "true" ]] && fab_test || {
+if [[ $(fab_validate_data) == "true" ]]
+then
+    fab_test
+else
     active "Perform feature flag tests"
     not_ok  $(fab_validate_description)
-}
+fi
             
-rm -f /tmp/feature_flags.$$
+rm -f ${dataset}
