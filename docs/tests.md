@@ -91,11 +91,16 @@ Expects:
 
 ### Number of Routers
 
-* [Authenticated to Vault](#vault-target-and-authenticate)
-* [Authenticated to BOSH](#bosh-target-and-authenticate)
+Specify the name of the Cloud Foundry deployment according to the `bosh vms` command.  And the number of routers you expect to be running in this environment.
 
-Inputs: Provide name of BOSH_DEPLOYMENT for Cloud Foundry.
-Expects: 1 or more
+```json
+[
+  {
+    "deployment": "xjkevin-cf",
+    "routers": "1"
+  }
+]
+```
 
 ## BOSH
 

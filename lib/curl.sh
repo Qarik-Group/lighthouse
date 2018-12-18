@@ -23,3 +23,13 @@ query_cf_api()
     rm -rf /tmp/lh/apps.$$
 }
 
+find_instance_name()
+{
+    declare deployment="${1:?Missing deployment name $(caller 0)}"
+    declare dataset
+    mkdir -p /tmp/lh/vms.$$
+    dataset=$(mktemp /tmp/instances.XXXXXX)
+    bosh vms -d ${deployment} --json > ${dataset}
+    jq -r '.Tables[].Rows[]|.instance|contains("router")' $dataset
+    rm -rf /tmp/lh/vms.$$
+}
