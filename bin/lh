@@ -1,34 +1,44 @@
 #!/usr/bin/env bash
 
+STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
+
+# read in configuration variables, when the file exits
+# it will not exist in piplines that run containers for example.
+[[ -s "config.env" ]] && source "config.env"
+
 bosh_login() {
 
-    # Generate the certificate file for BOSH_CA_CERT
+    ####
+    STEP "Logging into bosh."
+    ####
 
-    cat <(bosh int <(safe get secret/xjkevin/bosh/ssl/ca) --path /certificate) > certs/bosh-ssl.crt
+    # obtain the bosh CA cert and put in this repo under certs/bosh-ssl.crt to store in BOSH_CA_CERT.
 
-    # Set static configuration and configuration from safe here
+    cat <(bosh int <(safe get ${VAULT_PATH}/bosh/ssl/ca) --path /certificate) > certs/bosh-ssl.crt
 
-      BOSH_ENVIRONMENT="10.200.195.1"
-          BOSH_CA_CERT=certs/bosh-ssl.crt
-           BOSH_CLIENT="admin"
-    BOSH_CLIENT_SECRET=$(bosh int <(safe get secret/xjkevin/bosh/users/admin) --path /password)
+    # environment variables for BOSH needed to login.
+
+    BOSH_ENVIRONMENT="${BOSH_ENVIRONMENT}"
+    BOSH_IP="${BOSH_IP}"
+    BOSH_CA_CERT=certs/bosh-ssl.crt
+    BOSH_CLIENT="admin"
+    BOSH_CLIENT_SECRET=$(bosh int <(safe get ${VAULT_PATH}/bosh/users/admin) --path /password)
 
     # Create an alias
 
-    bosh alias-env bosh-env -e ${BOSH_ENVIRONMENT} --ca-cert ${BOSH_CA_CERT}
+    bosh alias-env ${BOSH_ENVIRONMENT} -e ${BOSH_IP} --ca-cert ${BOSH_CA_CERT}
 
-    # Log into BOSH_ENVIRONMENT
+    # Log into the BOSH_ENVIRONMENT
 
-    bosh login -e bosh-env --client=${BOSH_CLIENT} --client-secret=${BOSH_CLIENT_SECRET}
+    bosh login -e ${BOSH_ENVIRONMENT} --client=${BOSH_CLIENT} --client-secret=${BOSH_CLIENT_SECRET}
 
 }
 
 bosh_logout() {
 
-    unset BOSH_ENVIRONMENT
-    unset BOSH_CA_CERT
-    unset BOSH_CLIENT
-    unset BOSH_CLIENT_SECRET
+    ####
+    STEP "Logged out of bosh."
+    ####
 
     bosh logout -e bosh-env
 
@@ -36,22 +46,11 @@ bosh_logout() {
 
 }
 
-bosh_env() {
-cat > .envrc <<EOF
-export BOSH_ENVIRONMENT="10.200.195.1"
-export BOSH_CA_CERT=certs/bosh-ssl.crt
-export BOSH_CLIENT="admin"
-export BOSH_CLIENT_SECRET=$(bosh int <(safe get secret/xjkevin/bosh/users/admin) --path /password)
-EOF
-}
-
 bosh_tests() {
 
-    echo "-----------------"
-
-    echo "Running BOSH Tests"
-
-    echo "------------------"
+    ####
+    STEP "Running BOSH tests."
+    ####
 
     . tests/bosh/included
 
@@ -59,13 +58,17 @@ bosh_tests() {
 
 cf_login() {
 
-    # Set static configuration and configuration from safe here
+    ####
+    STEP "Logging into cf."
+    ####
+
+    # environment variables for Cloud Foundry needed to login.
 
     CF_USERNAME="admin"
-    CF_PASSWORD=$(bosh int <(safe get secret/xjkevin/cf/admin_user) --path /password)
-         CF_API="https://api.system.xjkevin.scalecf.net"
-         CF_ORG="system"
-       CF_SPACE="dev"
+    CF_PASSWORD=$(bosh int <(safe get ${VAULT_PATH}/cf/admin_user) --path /password)
+    CF_API="https://api.system.xjkevin.scalecf.net"
+    CF_ORG="system"
+    CF_SPACE="dev"
 
     # Set the API endpoint.
 
@@ -83,6 +86,10 @@ cf_login() {
 
 cf_logout() {
 
+    ####
+    STEP "Logged out of cf."
+    ####
+    
     cf logout
 
     cf api --unset
@@ -91,28 +98,35 @@ cf_logout() {
 
 cf_tests() {
 
-    echo "-----------------"
-
-    echo "Running CF Tests"
-
-    echo "------------------"
+    ####
+    STEP "Running CF tests."
+    ####
 
     . tests/cf/included
 
 }
 
 check_safe() {
-    echo "Checking vault connection..."
+    
+    ####
+    STEP "Checking vault connnection."
+    ####
 
-    safe status
+    safe status > /dev/null
+    if [[ $? > 0 ]]; then
+        echo "There was an error checking safe.  Please ensure your VAULT_ADDR and VAULT_TOKEN are correct."
+    fi
 
 }
 
 # loop through the list of required CLI software.
 
 check_dependencies() {
-    echo "Checking software dependencies..."
     
+    ####
+    STEP "Checking software dependencies."
+    ####
+        
     for command in "jq" "cf" "bosh" "safe" "make"; do
         type ${command} > /dev/null
         if [[ $? > 0 ]]; then
@@ -122,12 +136,21 @@ check_dependencies() {
 }
 
 safe_login() {
-    safe -k target https://10.200.130.4 lab
-    echo "Please enter your vault token..."
-    safe auth
+
+    ####
+    STEP "Logging into safe."
+    ####
+
+    safe -k target ${VAULT_ADDR} ${VAULT_ALIAS}
+    echo "$VAULT_TOKEN" | safe auth token
 }
 
 safe_logout() {
+
+    ####
+    STEP "Logged out of safe."
+    ####
+
     safe target delete lab
 }
 
@@ -139,16 +162,25 @@ check() {
 }
 
 login() {
+
     safe_login
     bosh_login
     cf_login
-    bosh_env
+
+    ####
+    STEP "Logged into all systems."
+    ####
+
 }
 
 logout() {
     safe_logout
     bosh_logout
     cf_logout
+
+    ####
+    STEP "Logged out of all systems."
+    ####
 }
 
 test() {
