@@ -19,8 +19,10 @@ echo "$VAULT_TOKEN" | safe auth token
 safe read secret/handshake
 
 header "Testing Cloud Foundry login"
+pwd
+ls -la
 
-. ../../bin/lh tests
+. ./kit/bin/lh tests
 
 exit 0
 
