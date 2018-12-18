@@ -1,5 +1,6 @@
 ---
 meta:
+  envname: hplab
   target:  hplab
   url:     https://concourse.hp.scalecf.net
 
