@@ -23,17 +23,35 @@ With lighthouse, you can run a quick series of tests to make sure things will be
 git clone https://github.com/krutten/lighthouse.git
 ```
 
-You've completed the **Getting Started** and are now ready to use Lighthouse!
-
 ### Configure
 
-3. Do Configuration step.
+3. Make a copy of the `config.env.example` file.
+
+```bash
+$ cp config.env.example config.env
+```
+
+4. Provide the required settings to the Vault backend by replacing all the `"replace-me"` values.
+
+```bash
+export VAULT_PATH="replace-me"
+export VAULT_TOKEN="replace-me"
+export VAULT_ADDR="replace-me"
+export VAULT_ALIAS="replace-me"
+export VAULT_SKIP_VERIFY=1
+```
+
+* `VAULT_PATH` is the beginning of the path to your secrets.  Like `secret/c-g6`.
+* `VAULT_TOKEN` is a alpha-numeric authentication and authorization token.
+* `VAULT_ADDR` is the IP address or FQDN to your vault.
+* `VAULT_ALIAS` is the name of the target for safe to use. For example: `sandbox`, `pre-prod`, `prod`.
+* `VAULT_SKIP_VERIFY` will skip the check for a TLS verification.
 
 ### Login
 
 Tests can be run from the commandline with the `bin/lh` script.  Yet you'll need to login first.
 
-4. Login to `safe`, `bosh-cli`, and `cf-cli`.
+1. Login to `safe`, `bosh-cli`, and `cf-cli`.
 
 ```bash
 bin/lh login
@@ -43,12 +61,22 @@ bin/lh login
 
 ```bash
 $ bin/lh login
+
+
+==\
+===> Logging into safe.
+==/
+
 Now targeting lab at https://10.200.130.4
 
-Please enter your vault token...
 Authenticating against  at https://10.200.130.4
-Token:
-Using environment '10.200.195.1' as anonymous user
+
+
+==\
+===> Logging into bosh.
+==/
+
+Using environment '10.200.195.1' as client 'admin'
 
 Name      xjkevin-bosh
 UUID      7fc1393a-05b8-4312-a000-05f532a32465
@@ -59,12 +87,18 @@ Features  compiled_package_cache: disabled
           local_dns: enabled
           power_dns: disabled
           snapshots: disabled
-User      (not logged in)
+User      admin
 
 Succeeded
 Successfully authenticated with UAA
 
 Succeeded
+
+
+==\
+===> Logging into cf.
+==/
+
 Setting api endpoint to https://api.system.xjkevin.scalecf.net...
 OK
 
@@ -79,6 +113,11 @@ api version:    2.114.0
 user:           admin
 org:            system
 space:          dev
+
+
+==\
+===> Logged into all systems.
+==/
 ```
 
 </details></p>
@@ -95,13 +134,19 @@ bin/lh test
 
 ```bash
 $ bin/lh test
------------------
-Running BOSH Tests
-------------------
+
+
+==\
+===> Running BOSH tests.
+==/
+
 PASSED
------------------
-Running CF Tests
-------------------
+
+
+==\
+===> Running CF tests.
+==/
+
 FAILED  Application data  validation for org 'starkandwayne'
 REASON Org does not exist
 FAILED  Application data  validation for org 'starkandwayne'
