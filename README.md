@@ -14,41 +14,6 @@ With lighthouse, you can run a quick series of tests to make sure things will be
 * [cf-cli](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html)
 * [bosh-cli](https://bosh.io/docs/cli-v2-install/)
 * [safe](https://github.com/starkandwayne/safe#attention-homebrew-users)
-* [make](#install-make)
-
-### Install Make
-
-You'll install `make` based on what operating system you have.  If you already have it, skip to [get software](#get-software).
-
-<details><summary>macOS:</summary>
-
-```bash
-xcode-select --install
-```
-
-</details>
-
-<details><summary>Ubuntu:</summary>
-
-```bash
-sudo apt-get install build-essential
-```
-
-</details>
-
-<details><summary>centOS:</summary>
-
-```bash
-yum groupinstall "Development Tools"
-```
-
-</details>
-
-<details><summary>Windows:</summary>
-
-Go here: [http://gnuwin32.sourceforge.net/packages/make.htm](http://gnuwin32.sourceforge.net/packages/make.htm)
-
-</details>
 
 ### Get Software
 
