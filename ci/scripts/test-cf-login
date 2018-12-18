@@ -18,9 +18,9 @@ safe target lighthouse-vault "$VAULT_URI" -k
 echo "$VAULT_TOKEN" | safe auth token
 safe read secret/handshake
 
-pwd
+header "Testing Cloud Foundry login"
 
-./bin/lh tests
+. ../../bin/lh tests
 
 exit 0
 
