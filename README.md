@@ -51,7 +51,7 @@ export VAULT_SKIP_VERIFY=1
 
 Tests can be run from the commandline with the `bin/lh` script.  Yet you'll need to login first.
 
-1. Login to `safe`, `bosh-cli`, and `cf-cli`.
+5. Login to `safe`, `bosh-cli`, and `cf-cli`.
 
 ```bash
 bin/lh login
