@@ -18,6 +18,8 @@ safe target lighthouse-vault "$VAULT_URI" -k
 echo "$VAULT_TOKEN" | safe auth token
 safe read secret/handshake
 
+pwd
+
 ./bin/lh tests
 
 exit 0
