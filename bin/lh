@@ -318,10 +318,6 @@ case "$1" in
         done
         check "$@"
         ;;
-    tests)
-        cf_login
-	cf_run
-        ;;
     *)
         usage
         exit 1
