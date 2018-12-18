@@ -23,31 +23,23 @@ With lighthouse, you can run a quick series of tests to make sure things will be
 git clone https://github.com/krutten/lighthouse.git
 ```
 
-### Authorize Safe
-
-3. Create a target to your vault with safe.
-
-```bash
-safe -k target https://10.200.130.4 lab
-```
-
-4. Then login to safe, with a token.
-
-```bash
-safe auth
-```
-
 You've completed the **Getting Started** and are now ready to use Lighthouse!
 
-## Usage
+### Configure
 
-Let's first run a command to test that tool is connected to your authencation backend.
+3. Do Configuration step.
+
+### Login
+
+Tests can be run from the commandline with the `bin/lh` script.  Yet you'll need to login first.
+
+4. Login to `safe`, `bosh-cli`, and `cf-cli`.
 
 ```bash
-make check
+bin/lh login
 ```
 
-<p><details><summary>A successful <code>make check</code> will login to BOSH and Cloud Foundry:</summary>
+<p><details><summary>A successful <code>bin/lh login</code> looks like this :</summary>
 
 ```bash
 Using environment '10.200.195.1' as anonymous user
@@ -85,8 +77,54 @@ space:          dev
 
 </details></p>
 
-Once set up, flip the switch and turn on your lighthouse.  Run `make all` to run your tests and light the way home.
+### Run Tests
+
+Run `bin/lh test` to start the tests.
 
 ```bash
-make all
+bin/lh test
 ```
+
+<p><details><summary>A successful <code>bin/lh test</code> looks like this :</summary>
+
+```bash
+$ bin/lh login
+Now targeting lab at https://10.200.130.4
+
+Please enter your vault token...
+Authenticating against  at https://10.200.130.4
+Token:
+Using environment '10.200.195.1' as anonymous user
+
+Name      xjkevin-bosh
+UUID      7fc1393a-05b8-4312-a000-05f532a32465
+Version   268.2.0 (00000000)
+CPI       vsphere_cpi
+Features  compiled_package_cache: disabled
+          config_server: enabled
+          local_dns: enabled
+          power_dns: disabled
+          snapshots: disabled
+User      (not logged in)
+
+Succeeded
+Successfully authenticated with UAA
+
+Succeeded
+Setting api endpoint to https://api.system.xjkevin.scalecf.net...
+OK
+
+api endpoint:   https://api.system.xjkevin.scalecf.net
+api version:    2.114.0
+API endpoint: https://api.system.xjkevin.scalecf.net
+Authenticating...
+OK
+Use 'cf target' to view or set your target org and space.
+api endpoint:   https://api.system.xjkevin.scalecf.net
+api version:    2.114.0
+user:           admin
+org:            system
+space:          dev
+```
+
+</details></p>
