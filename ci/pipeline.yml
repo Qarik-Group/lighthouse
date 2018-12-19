@@ -17,6 +17,8 @@ meta:
   url:      (( param "Please specify the full url of the target Concourse CI" ))
   pipeline: lighthouse
 
+  bosh:
+    ip:    (( Param "Please provide the address of the BOSH director" ))
   vault:
     url:   (( param "Please provide the address of your Vault" ))
     token: (( param "Please provide a Vault Token" ))
@@ -78,8 +80,8 @@ jobs:
             VAULT_TOKEN: (( grab meta.vault.token ))
             VAULT_SKIP_VERIFY: 1
             BOSH_ENVIRONMENT: (( grab meta.envname ))
+            BOSH_IP: (( grab meta.bosh.ip ))
             BASE_ENV: (( grab meta.envname ))
-
 - name: cf-login-test
   public: true
   plan:
@@ -108,6 +110,7 @@ jobs:
           VAULT_TOKEN: (( grab meta.vault.token ))
           VAULT_SKIP_VERIFY: 1
           BOSH_ENVIRONMENT: (( grab meta.envname ))
+          BOSH_IP: (( grab meta.bosh.ip ))
           BASE_ENV: (( grab meta.envname ))
 - name: cf-orgs-test
   public: true
@@ -137,6 +140,7 @@ jobs:
           VAULT_TOKEN: (( grab meta.vault.token ))
           VAULT_SKIP_VERIFY: 1
           BOSH_ENVIRONMENT: (( grab meta.envname ))
+          BOSH_IP: (( grab meta.bosh.ip ))
           BASE_ENV: (( grab meta.envname ))
 - name: bosh-login-test
   public: true
@@ -166,6 +170,7 @@ jobs:
           VAULT_TOKEN: (( grab meta.vault.token ))
           VAULT_SKIP_VERIFY: 1
           BOSH_ENVIRONMENT: (( grab meta.envname ))
+          BOSH_IP: (( grab meta.bosh.ip ))
           BASE_ENV: (( grab meta.envname ))
 
 

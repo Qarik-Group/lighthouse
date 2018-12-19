@@ -3,6 +3,8 @@ meta:
   envname: hplab
   target:  hplab
   url:     https://concourse.hp.scalecf.net
+  bosh:
+    ip: "10.250.1.1"
 
   vault:
     url:   https://10.250.4.48
