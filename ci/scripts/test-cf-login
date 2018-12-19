@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -eu
+
+: ${VAULT_ADDR:?required}
+: ${VAULT_TOKEN:?required}
+: ${VAULT_ALIAS:?required}
+
+header() {
+    echo
+    echo "###############################################"
+    echo
+    echo $*
+    echo
+}
+
+header "Setting up safe..."
+safe target "$VAULT_ALIAS" "$VAULT_ADDR" -k
+echo "$VAULT_TOKEN" | safe auth token
+safe read secret/handshake
+
+header "Testing Cloud Foundry login"
+pwd
+ls -la
+
+. ./lighthouse/bin/lh login cf
+
+exit 0
+

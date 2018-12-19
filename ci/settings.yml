@@ -1,0 +1,19 @@
+---
+meta:
+  envname: hplab
+  target:  hplab
+  url:     https://concourse.hp.scalecf.net
+  bosh:
+    ip: "10.250.1.1"
+
+  vault:
+    url:   https://10.250.4.48
+    token: (( vault "secret/pipeline/vault:token" ))
+    path:  (( concat "secret/" meta.envname ))  # Or override as needed
+
+  github:
+    owner:  krutten
+    repo:   lighthouse
+    branch: pipelines
+    private_key:  (( vault "secret/pipelines/shared/github/genesis-bot:private" ))
+

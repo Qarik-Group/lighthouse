@@ -1,0 +1,184 @@
+---
+#
+# ci/pipeline.yml
+#
+# Pipeline structure file for a Genesis Release pipeline
+#
+# DO NOT MAKE CHANGES TO THIS FILE.  Instead, modify
+# ci/settings.yml and override what needs overridden.
+# This uses spruce, so you have some options there.
+#
+# author:  James Hunt <james@niftylogic.com>
+# created: 2018-01-23
+
+meta:
+  envname:  (( param "Please provide an environment name for bosh and the safe paths" ))
+  target:   (( param "Please identify the name of the target Concourse CI" ))
+  url:      (( param "Please specify the full url of the target Concourse CI" ))
+  pipeline: lighthouse
+
+  bosh:
+    ip:    (( Param "Please provide the address of the BOSH director" ))
+  vault:
+    url:   (( param "Please provide the address of your Vault" ))
+    token: (( param "Please provide a Vault Token" ))
+    path : (( param "Please provide a Vault path/prefix such as 'secret/lab'"  ))
+
+  image:
+    name: starkandwayne/genesis_ci
+    tag: latest
+
+  git:
+    email: ci@starkandwayne.com
+    name:  Stark & Wayne CI Bot
+
+  github:
+    uri:          (( concat "git@github.com:" meta.github.owner "/" meta.github.repo ))
+    owner:        (( param "Please specify the name of the user / organization that owns the Github repository" ))
+    repo:         (( param "Please specify the name of the Github repository" ))
+    branch:       pipeline
+    private_key:  (( param "Please generate an SSH Deployment Key for this repo and specify it here" ))
+
+#groups:
+#  - name: (( grab meta.pipeline ))
+#    jobs:
+#      - vault-test
+#      - cf-login-test
+#      - bosh-login-test
+#      - cf-test
+#      - bosh-test
+
+jobs:
+- name: vault-test
+  public: true
+  plan:
+  - name: main
+    do:
+    - name: get
+      aggregate:
+      - { get: git, trigger: true }
+    - name: testflights
+      aggregate:
+      - name: testflight
+        task: testflight
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: (( grab meta.image.name ))
+              tag:        (( grab meta.image.tag ))
+          inputs:
+            - { name: git, path: lighthouse }
+          run:
+            path: ./lighthouse/ci/scripts/check_safe
+            args: []
+          params:
+            VAULT_ADDR: (( grab meta.vault.url ))
+            VAULT_ALIAS: (( grab meta.envname ))
+            VAULT_PATH: (( grab meta.vault.path ))
+            VAULT_TOKEN: (( grab meta.vault.token ))
+            VAULT_SKIP_VERIFY: 1
+            BOSH_ENVIRONMENT: (( grab meta.envname ))
+            BOSH_IP: (( grab meta.bosh.ip ))
+            BASE_ENV: (( grab meta.envname ))
+- name: cf-login-test
+  public: true
+  plan:
+  - name: cftest
+    do:
+    - get: git 
+      passed: [ vault-test ]
+      trigger: true
+    - task: cflogin
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: (( grab meta.image.name ))
+            tag:        (( grab meta.image.tag ))
+        inputs:
+          - { name: git, path: lighthouse }
+        run:
+          path: ./lighthouse/ci/scripts/test-cf-login
+          args:  [ ]
+        params:
+          VAULT_ADDR: (( grab meta.vault.url ))
+          VAULT_ALIAS: (( grab meta.envname ))
+          VAULT_PATH: (( grab meta.vault.path ))
+          VAULT_TOKEN: (( grab meta.vault.token ))
+          VAULT_SKIP_VERIFY: 1
+          BOSH_ENVIRONMENT: (( grab meta.envname ))
+          BOSH_IP: (( grab meta.bosh.ip ))
+          BASE_ENV: (( grab meta.envname ))
+- name: cf-orgs-test
+  public: true
+  plan:
+  - name: main
+    do:
+    - get: git
+      passed: [ cf-login-test ]
+      trigger: true
+    - task: cflogin
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: (( grab meta.image.name ))
+            tag:        (( grab meta.image.tag ))
+        inputs:
+          - { name: git, path: lighthouse }
+        run:
+          path: ./lighthouse/bin/lh test
+          args: []
+        params:
+          VAULT_ADDR: (( grab meta.vault.url ))
+          VAULT_ALIAS: (( grab meta.envname ))
+          VAULT_PATH: (( grab meta.vault.path ))
+          VAULT_TOKEN: (( grab meta.vault.token ))
+          VAULT_SKIP_VERIFY: 1
+          BOSH_ENVIRONMENT: (( grab meta.envname ))
+          BOSH_IP: (( grab meta.bosh.ip ))
+          BASE_ENV: (( grab meta.envname ))
+- name: bosh-login-test
+  public: true
+  plan:
+  - name: main
+    do:
+    - get: git
+      passed: [ vault-test ]
+      trigger: true
+    - task: bosh-login-test
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: (( grab meta.image.name ))
+            tag:        (( grab meta.image.tag ))
+        inputs:
+          - { name: git, path: lighthouse }
+        run:
+          path: ./lighthouse/ci/scripts/test-bosh-login
+          args: []
+        params:
+          VAULT_ADDR: (( grab meta.vault.url ))
+          VAULT_ALIAS: (( grab meta.envname ))
+          VAULT_PATH: (( grab meta.vault.path ))
+          VAULT_TOKEN: (( grab meta.vault.token ))
+          VAULT_SKIP_VERIFY: 1
+          BOSH_ENVIRONMENT: (( grab meta.envname ))
+          BOSH_IP: (( grab meta.bosh.ip ))
+          BASE_ENV: (( grab meta.envname ))
+
+
+resources:
+  - name: git
+    type: git
+    source:
+      uri:         (( grab meta.github.uri ))
+      branch:      (( grab meta.github.branch ))
+      private_key: (( grab meta.github.private_key ))
+
