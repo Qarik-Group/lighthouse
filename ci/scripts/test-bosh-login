@@ -15,12 +15,12 @@ header() {
 }
 
 header "Setting up safe..."
-safe target lighthouse-vault "$VAULT_URI" -k
+safe target "$VAULT_ALIAS" "$VAULT_ADDR" -k
 echo "$VAULT_TOKEN" | safe auth token
 safe read secret/handshake
 
 header "Testing BOSH login"
-
+. ./lighthouse/bin/lh login bosh
 
 exit 0
 

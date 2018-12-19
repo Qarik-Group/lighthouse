@@ -127,7 +127,7 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./lighthouse/ci/scripts/test-cf-org
+          path: ./lighthouse/bin/lh test
           args: []
         params:
           VAULT_ADDR: (( grab meta.vault.url ))

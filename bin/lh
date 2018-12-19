@@ -40,7 +40,7 @@ bosh_logout() {
     STEP "Logged out of bosh."
     ####
 
-    bosh logout -e bosh-env
+    bosh logout -e ${BOSH_ENVIRONMENT}
 
     rm -f certs/bosh-ssl.crt
 
@@ -66,7 +66,8 @@ cf_login() {
 
     CF_USERNAME="admin"
     CF_PASSWORD=$(bosh int <(safe get ${VAULT_PATH}/cf/admin_user) --path /password)
-    CF_API="https://api.system.xjkevin.scalecf.net"
+    CF_API="$( safe get secret/exodus/${BASE_ENV}/cf:api_url )"
+
     CF_ORG="system"
     CF_SPACE="dev"
 

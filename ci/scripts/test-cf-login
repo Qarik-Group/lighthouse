@@ -23,7 +23,7 @@ header "Testing Cloud Foundry login"
 pwd
 ls -la
 
-. ./lighthouse/bin/lh login 
+. ./lighthouse/bin/lh login cf
 
 exit 0
 
