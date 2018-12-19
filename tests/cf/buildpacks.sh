@@ -34,10 +34,12 @@ fab_test()
     do
         if [[ "${prev_stack}" !=  ${stack} ]]
         then
-            echo -e "\n        stack: ${stack}\n"
+
+            info ""
+            info "stack: ${stack}"
             prev_stack=${stack}
         fi
-        echo "               ${name}"
+        info  "        ${name}"
     done 
     return 0
 }

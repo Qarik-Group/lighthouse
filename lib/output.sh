@@ -29,10 +29,17 @@
 
 # When a test passes
 
+info() {
+    declare message="$@"
+    declare status="RESULT"
+    printf "${CYAN}%-7s${RESET} %-.70s\n" "${status}" "${message}"
+    return 0
+}
+
 ok() {
     declare message="$@"
     declare status="PASSED"
-    printf "${GREEN}%-7s${RESET}\n" "${status}"
+    printf "${GREEN}%-7s${RESET} %-.70s\n" "${status}"
     return 0
 }
 
