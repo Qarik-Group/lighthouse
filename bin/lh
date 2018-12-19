@@ -12,15 +12,15 @@ bosh_login() {
     STEP "Logging into bosh."
     ####
 
-    # obtain the bosh CA cert and put in this repo under certs/bosh-ssl.crt to store in BOSH_CA_CERT.
-    mkdir certs
-    cat <(bosh int <(safe get ${VAULT_PATH}/bosh/ssl/ca) --path /certificate) > certs/bosh-ssl.crt
+    # obtain the bosh CA cert, place in a temp folder, to store in BOSH_CA_CERT.
+    mkdir -p /tmp/lh/certs.$$
+    cat <(bosh int <(safe get ${VAULT_PATH}/bosh/ssl/ca) --path /certificate) > /tmp/lh/certs.$$/bosh-ssl.crt
 
     # environment variables for BOSH needed to login.
 
     BOSH_ENVIRONMENT="${BOSH_ENVIRONMENT}"
     BOSH_IP="${BOSH_IP}"
-    BOSH_CA_CERT=certs/bosh-ssl.crt
+    BOSH_CA_CERT=/tmp/lh/certs.$$/bosh-ssl.crt
     BOSH_CLIENT="admin"
     BOSH_CLIENT_SECRET=$(bosh int <(safe get ${VAULT_PATH}/bosh/users/admin) --path /password)
 
@@ -42,7 +42,8 @@ bosh_logout() {
 
     bosh logout -e ${BOSH_ENVIRONMENT}
 
-    rm -f certs/bosh-ssl.crt
+    # remove the cert we've got, in case we're going to target a new director
+    rm -rf /tmp/lh/certs.*
 
 }
 
