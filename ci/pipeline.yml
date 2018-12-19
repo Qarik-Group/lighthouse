@@ -78,7 +78,7 @@ jobs:
             VAULT_TOKEN: (( grab meta.vault.token ))
             VAULT_SKIP_VERIFY: 1
             BOSH_ENVIRONMENT: (( grab meta.envname ))
-
+            BASE_ENV: (( grab meta.envname ))
 
 - name: cf-login-test
   public: true
@@ -108,6 +108,7 @@ jobs:
           VAULT_TOKEN: (( grab meta.vault.token ))
           VAULT_SKIP_VERIFY: 1
           BOSH_ENVIRONMENT: (( grab meta.envname ))
+          BASE_ENV: (( grab meta.envname ))
 - name: cf-orgs-test
   public: true
   plan:
@@ -136,6 +137,7 @@ jobs:
           VAULT_TOKEN: (( grab meta.vault.token ))
           VAULT_SKIP_VERIFY: 1
           BOSH_ENVIRONMENT: (( grab meta.envname ))
+          BASE_ENV: (( grab meta.envname ))
 - name: bosh-login-test
   public: true
   plan:
@@ -164,6 +166,7 @@ jobs:
           VAULT_TOKEN: (( grab meta.vault.token ))
           VAULT_SKIP_VERIFY: 1
           BOSH_ENVIRONMENT: (( grab meta.envname ))
+          BASE_ENV: (( grab meta.envname ))
 
 
 resources:
