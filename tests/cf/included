@@ -1,4 +1,5 @@
 tests/cf/apps.sh
+tests/cf/buildpacks.sh
 tests/cf/feature_flags.sh
 tests/cf/orgs.sh
 tests/cf/spaces.sh
