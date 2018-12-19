@@ -13,7 +13,7 @@ bosh_login() {
     ####
 
     # obtain the bosh CA cert and put in this repo under certs/bosh-ssl.crt to store in BOSH_CA_CERT.
-    mkdir certs
+    [[ ! -d certs ]] && mkdir certs
     cat <(bosh int <(safe get ${VAULT_PATH}/bosh/ssl/ca) --path /certificate) > certs/bosh-ssl.crt
 
     # environment variables for BOSH needed to login.

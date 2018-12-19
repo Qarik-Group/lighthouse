@@ -19,6 +19,7 @@ meta:
 
   bosh:
     ip:    (( Param "Please provide the address of the BOSH director" ))
+
   vault:
     url:   (( param "Please provide the address of your Vault" ))
     token: (( param "Please provide a Vault Token" ))
@@ -36,7 +37,7 @@ meta:
     uri:          (( concat "git@github.com:" meta.github.owner "/" meta.github.repo ))
     owner:        (( param "Please specify the name of the user / organization that owns the Github repository" ))
     repo:         (( param "Please specify the name of the Github repository" ))
-    branch:       pipeline
+    branch:       master
     private_key:  (( param "Please generate an SSH Deployment Key for this repo and specify it here" ))
 
 #groups:
@@ -131,8 +132,8 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./lighthouse/bin/lh test
-          args: []
+          path: ./lighthouse/bin/lh
+          args: [ test ]
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
           VAULT_ALIAS: (( grab meta.envname ))
