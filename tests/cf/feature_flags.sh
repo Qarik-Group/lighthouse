@@ -6,7 +6,7 @@
 . lib/output.sh
 
 dataset="/tmp/lh/feature_flags.$$"
-validation_data="data/cf/feature_flags.json"
+validation_data="rules/cf/feature_flags.json"
 lh_result="true"
 
 fab_validate_data()

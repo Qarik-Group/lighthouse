@@ -3,7 +3,7 @@
 . lib/curl.sh
 . lib/output.sh
 
-test_data="data/cf/orgs.json"
+test_data="rules/cf/orgs.json"
 dataset="organizations_$$"
 
 lh_result="true"
