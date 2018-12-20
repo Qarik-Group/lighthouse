@@ -6,6 +6,7 @@
 . lib/output.sh
 
 dataset="/tmp/lh/buildpacks.$$"
+lh_result="true"
 
 fab_validate_data()
 {
@@ -26,6 +27,7 @@ fab_test()
         ok
     else
         not_ok
+        lh_result="false"
         return 0
     fi
     declare prev_stack="asdfgh"
@@ -50,6 +52,8 @@ then
 else
     active "Perform buildpacks list"
     not_ok  $(fab_validate_description)
+    lh_result="false"
 fi
             
 rm -f ${dataset}
+[[ "${lh_result}" == "true" ]]

@@ -7,6 +7,7 @@
 
 dataset="/tmp/lh/feature_flags.$$"
 validation_data="data/cf/feature_flags.json"
+lh_result="true"
 
 fab_validate_data()
 {
@@ -54,9 +55,11 @@ fab_test()
                 ok
             else
                 not_ok
+                lh_result="false"
             fi
         else
             not_ok Feature flag "${feature_flag}" does not exist
+            lh_result="false"
         fi
     done
 
@@ -69,9 +72,11 @@ fab_test()
                 ok
             else
                 not_ok
+                lh_result="false"
             fi
         else
             not_ok Feature flag  "${feature_flag}" does not exist
+            lh_result="false"
         fi
     done
 }
@@ -82,6 +87,8 @@ then
 else
     active "Perform feature flag tests"
     not_ok  $(fab_validate_description)
+    lh_result="false"
 fi
             
 rm -f ${dataset}
+[[ "${lh_result}" == "true" ]]

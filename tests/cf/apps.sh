@@ -8,6 +8,7 @@ spaces_dataset="spaces_$$"
 apps_dataset="apps_$$"
 validation_data="data/cf/apps.json"
 
+lh_result="true"
 fab_validate_data()
 {
     jq -r '[(type=="array",length > 0),
@@ -90,12 +91,14 @@ fab_test()
         [[ -z "${spaces_url}" ]] && {
             active "Application data  validation for org '${org}'"
             not_ok "Org does not exist"
+            lh_result="false"
             continue
         }
         apps_url=$(get_space_apps_url "${spaces_url}" "${space}")
         [[ -z "${apps_url}" ]] && {
             active "Application data validation for space '${space}'"
             not_ok "Space does not exist"
+            lh_result="false"
             continue
         }
 
@@ -109,6 +112,7 @@ fab_test()
                 ok
             else
                 not_ok
+                lh_result="false"
             fi
         done
     done
@@ -121,8 +125,10 @@ then
 else
     active "Perform space existence tests"
     not_ok  $(fab_validate_description)
+    lh_result="false"
 fi
 
 rm -f /tmp/lh/${org_dataset}
 rm -f /tmp/lh/${spaces_dataset}
 rm -f /tmp/lh/${apps_dataset}
+[[ "${lh_result}" == "true" ]]
