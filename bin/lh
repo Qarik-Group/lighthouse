@@ -236,11 +236,13 @@ usage() {
     echo "  logout -- logout of safe, BOSH and CF."
     echo "  check  -- check for dependencies or signed in."
     echo "  test   -- run all tests."
+    echo "  run    -- run a single test."
     exit 1
 }
 
-# only do what the man says to do
+echo "Lighthouse 0: $0 1: $1 2: $2 3: $3"
 
+# only do what the man says to do
 case "$1" in
     login)
         shift
