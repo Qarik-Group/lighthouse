@@ -1,4 +1,2 @@
-certs/*
 config.env
 *.tmp
-
