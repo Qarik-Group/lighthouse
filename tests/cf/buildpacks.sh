@@ -5,6 +5,8 @@
 
 . lib/output.sh
 
+mkdir -p /tmp/lh
+
 dataset="/tmp/lh/buildpacks.$$"
 lh_result="true"
 
