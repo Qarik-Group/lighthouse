@@ -72,8 +72,9 @@ jobs:
           inputs:
             - { name: git, path: lighthouse }
           run:
-            path: ./lighthouse/ci/scripts/check_safe
+            path: ./ci/scripts/check_safe
             args: []
+            dir: ./lighthouse
           params:
             VAULT_ADDR: (( grab meta.vault.url ))
             VAULT_ALIAS: (( grab meta.envname ))
@@ -102,8 +103,9 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./lighthouse/ci/scripts/test-cf-login
-          args:  [ ]
+          path: ./bin/lh
+          args:  [ login, cf ]
+          dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
           VAULT_ALIAS: (( grab meta.envname ))
@@ -132,8 +134,9 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./lighthouse/bin/lh
-          args: [ run tests/cf/orgs.sh ]
+          path: ./bin/lh
+          args: [ run , tests/cf/orgs.sh ]
+          dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
           VAULT_ALIAS: (( grab meta.envname ))
@@ -162,8 +165,9 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./lighthouse/bin/lh
-          args: [ run tests/cf/spaces.sh ]
+          path: ./bin/lh
+          args: [ run , tests/cf/spaces.sh ]
+          dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
           VAULT_ALIAS: (( grab meta.envname ))
@@ -192,8 +196,9 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./lighthouse/bin/lh
-          args: [ run tests/cf/apps.sh ]
+          path: ./bin/lh
+          args: [ run , tests/cf/apps.sh ]
+          dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
           VAULT_ALIAS: (( grab meta.envname ))
@@ -222,8 +227,9 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./lighthouse/bin/lh
-          args: [ run tests/cf/buildpacks.sh ]
+          path: ./bin/lh
+          args: [ run , tests/cf/buildpacks.sh ]
+          dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
           VAULT_ALIAS: (( grab meta.envname ))
@@ -252,8 +258,9 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./lighthouse/ci/scripts/test-bosh-login
-          args: []
+          path: ./bin/lh
+          args: [ login, bosh ]
+          dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
           VAULT_ALIAS: (( grab meta.envname ))
@@ -282,8 +289,9 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./lighthouse/bin/lh
-          args: [ test bosh ]
+          path: ./bin/lh
+          args: [ test , bosh ]
+          dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
           VAULT_ALIAS: (( grab meta.envname ))

@@ -190,7 +190,7 @@ run_test() {
 }
 
 run_individual_test() {
-    safe_login
+    login
     . $1
     exit $?
 }
@@ -239,8 +239,6 @@ usage() {
     echo "  run    -- run a single test."
     exit 1
 }
-
-echo "Lighthouse 0: $0 1: $1 2: $2"
 
 # only do what the man says to do
 case "$1" in
