@@ -240,7 +240,7 @@ usage() {
     exit 1
 }
 
-echo "Lighthouse 0: $0 1: $1 2: $2 3: $3"
+echo "Lighthouse 0: $0 1: $1 2: $2"
 
 # only do what the man says to do
 case "$1" in
