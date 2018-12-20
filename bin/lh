@@ -189,9 +189,15 @@ logout() {
     ####
 }
 
-test() {
+run_test() {
     bosh_tests
     cf_tests
+}
+
+run_individual_test() {
+    login
+    . $1
+    exit $?
 }
 
 # teach a man to CLI
@@ -224,17 +230,22 @@ test_usage() {
     exit 1
 }
 
+run_usage() {
+    echo "       [path to test]: run this test."
+    exit 1
+}
+
 usage() {
     echo "Lighthouse: It's clear to come ashore."
     echo "  login  -- sign into vault with safe, then BOSH and CF with vault."
     echo "  logout -- logout of safe, BOSH and CF."
     echo "  check  -- check for dependencies or signed in."
     echo "  test   -- run all tests."
+    echo "  run    -- run a single test."
     exit 1
 }
 
 # only do what the man says to do
-
 case "$1" in
     login)
         shift
@@ -256,7 +267,12 @@ case "$1" in
                     safe_login
                     exit 0
                     ;;
+                *)
+                    login_usage
+                    exit 0
+                    ;;
             esac
+            shift
         done
         login "$@"
         ;;
@@ -280,7 +296,12 @@ case "$1" in
                     safe_logout
                     exit 0
                     ;;
+                *)
+                    logout_usage
+                    exit 0
+                    ;;
             esac
+            shift
         done
         logout "$@"
         ;;
@@ -291,7 +312,7 @@ case "$1" in
                 -h|--help|help)
                     test_usage
                     exit 0
-                    ;;            
+                    ;;
                 cf)
                     cf_tests
                     exit 0
@@ -299,8 +320,13 @@ case "$1" in
                 bosh)
                     bosh_tests
                     exit 0
-                    ;;                    
+                    ;;
+                *)
+                    test_usage
+                    exit 0
+                    ;;
             esac
+            shift
         done
         test "$@"
         ;;
@@ -311,7 +337,7 @@ case "$1" in
                 -h|--help|help)
                     check_usage
                     exit 0
-                    ;;            
+                    ;;
                 dependencies)
                     check_dependencies
                     exit 0
@@ -319,10 +345,33 @@ case "$1" in
                 safe)
                     check_safe
                     exit 0
-                    ;;                    
+                    ;;
+                *)
+                    check_usage
+                    exit 0
+                    ;;
             esac
+            shift
         done
         check "$@"
+        ;;
+    run)
+        shift
+        while [[ $# -gt 0 ]]; do
+            echo "Running test $1"
+            case "$1" in
+                -h|--help|help)
+                    run_usage
+                    exit 0
+                    ;;
+                *)
+                    run_individual_test "$1"
+                    exit 0
+                    ;;
+            esac
+            shift
+        done
+        run_usage
         ;;
     *)
         usage

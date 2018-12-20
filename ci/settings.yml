@@ -14,6 +14,6 @@ meta:
   github:
     owner:  krutten
     repo:   lighthouse
-    branch: pipelines
+    branch: master
     private_key:  (( vault "secret/pipelines/shared/github/genesis-bot:private" ))
 

@@ -6,7 +6,7 @@
 org_dataset="organization_$$"
 spaces_dataset="spaces_$$"
 validation_data="data/cf/spaces.json"
-
+lh_result="true"
 
 fab_validate_data()
 {
@@ -66,6 +66,7 @@ fab_test()
         [[ -z "${spaces_url}" ]] && {
             active "Does the expected spaces exist in org ${org}?"
             not_ok "Org does not exit"
+            lh_result="false"
             continue
         }
 
@@ -80,6 +81,7 @@ fab_test()
                 ok
             else
                 not_ok
+                lh_result="false"
             fi
         done
     done
@@ -92,7 +94,9 @@ then
 else
     active "Perform space existence tests"
     not_ok  $(fab_validate_description)
+    lh_result="false"
 fi
 
 rm -f /tmp/lh/${org_dataset}
 rm -f /tmp/lh/${spaces_dataset}
+[[ "${lh_result}" == "true" ]]
