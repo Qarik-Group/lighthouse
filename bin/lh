@@ -14,7 +14,7 @@ bosh_login() {
 
     # obtain the bosh CA cert, place in a temp folder, to store in BOSH_CA_CERT.
     mkdir -p /tmp/lh/certs.$$
-    cat <(bosh int <(safe get ${VAULT_PATH}/bosh/ssl/ca) --path /certificate) > /tmp/lh/certs.$$/bosh-ssl.crt
+    safe get ${VAULT_PATH}/bosh/ssl/ca:certificate > /tmp/lh/certs.$$/bosh-ssl.crt
 
     # environment variables for BOSH needed to login.
 
@@ -22,7 +22,7 @@ bosh_login() {
     BOSH_IP="${BOSH_IP}"
     BOSH_CA_CERT=/tmp/lh/certs.$$/bosh-ssl.crt
     BOSH_CLIENT="admin"
-    BOSH_CLIENT_SECRET=$(bosh int <(safe get ${VAULT_PATH}/bosh/users/admin) --path /password)
+    BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/users/admin:password)
 
     # Create an alias
 
@@ -66,7 +66,7 @@ cf_login() {
     # environment variables for Cloud Foundry needed to login.
 
     CF_USERNAME="admin"
-    CF_PASSWORD=$(bosh int <(safe get ${VAULT_PATH}/cf/admin_user) --path /password)
+    CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/admin_user:password)
     CF_API="$( safe get secret/exodus/${BASE_ENV}/cf:api_url )"
 
     CF_ORG="system"
@@ -114,7 +114,7 @@ check_safe() {
     STEP "Checking vault connnection."
     ####
 
-    safe status > /dev/null
+    safe get secret/handshake > /dev/null
     if [[ $? > 0 ]]; then
         echo "There was an error checking safe.  Please ensure your VAULT_ADDR and VAULT_TOKEN are correct."
     fi
@@ -328,7 +328,7 @@ case "$1" in
             esac
             shift
         done
-        test "$@"
+        run_test "$@"
         ;;
     check)
         shift
