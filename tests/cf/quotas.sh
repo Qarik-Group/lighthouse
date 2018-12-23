@@ -8,20 +8,6 @@ validation_data="rules/cf/quotas.json"
 
 lh_result="true"
 
-  # from api interface
-            # "name": "500GB",
-            # "non_basic_services_allowed": false,
-            # "total_services": 1000,
-            # "total_routes": 5000,
-            # "total_private_domains": -1,
-            # "memory_limit": 512000,
-            # "trial_db_allowed": false,
-            # "instance_memory_limit": 10240,
-            # "app_instance_limit": -1,
-            # "app_task_limit": -1,
-            # "total_service_keys": -1,
-            # "total_reserved_route_ports": 0
-
 declare -A quota_map
 quota_map["allow_paid_service_plans"]="non_basic_services_allowed"
 quota_map["service_instances"]="total_services"
@@ -34,7 +20,7 @@ quota_map["app_tasks"]="app_task_limit"
 quota_map["service_keys"]="total_service_keys"
 quota_map["reserved_route_ports"]="total_reserved_route_ports"
 
-echo "${!quota_map[@]}"
+# echo "${!quota_map[@]}"
 
 fab_validate_data()
 {
@@ -184,12 +170,23 @@ fab_test()
                     lh_result="false"
                 fi
             else
-                if ((${quota_value} ${operation[0]} ${operation[1]}))
+                # -1 represents the largest value, 
+                # so negate test when -1 and positive integers are compared with with < or > for first approximation
+
+                declare negate=""
+
+                if  [[ ${operation[0]} =~ ^[\<\>] ]] &&
+                    (((${quota_value} == -1 && ${operation[1]} > -1) || (${quota_value} > -1 && ${operation[1]} == -1) )) 
+                then
+                    negate='!'
+                fi
+
+                if ((${negate}(${quota_value} ${operation[0]} ${operation[1]}) ))
                 then
                     ok 
-                    info "${quota_value} ${operation[0]} ${operation[1]}"
+                    info "${negate}(${quota_value} ${operation[0]} ${operation[1]})"
                 else
-                    not_ok "${quota_value} ${operation[0]} ${operation[1]}"
+                    not_ok "${negate}(${quota_value} ${operation[0]} ${operation[1]})"
                 fi
             fi
                 #*)

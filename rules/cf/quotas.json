@@ -26,8 +26,8 @@
             "value": 3
             },
         "private_domains":{
-            "operator": "==",
-            "value": -1
+            "operator": ">=",
+            "value": 1000
             },
         "app_tasks":{
             "operator": "==",
