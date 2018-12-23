@@ -2,7 +2,7 @@
     {
         "quota_name": "dm-smoketest-quota",
         "total_memory":{
-            "operator": "==",
+            "operator": ">=",
             "value": 3072
             },
         "instance_memory":{
@@ -24,6 +24,18 @@
         "reserved_route_ports":{
             "operator": "==",
             "value": 3
+            },
+        "private_domains":{
+            "operator": "==",
+            "value": -1
+            },
+        "app_tasks":{
+            "operator": "==",
+            "value": -1
+            },
+        "service_keys":{
+            "operator": "==",
+            "value": -1
             },
         "allow_paid_service_plans":{
             "value": true
