@@ -1,15 +1,13 @@
 [
     {
-        "quota": "default",
+        "quota_name": "dm-smoketest-quota",
         "total_memory":{
             "operator": "==",
-            "value": 3,
-            "unit": "G" 
+            "value": 3072
             },
         "instance_memory":{
             "operator": "==",
-            "value": 3,
-            "unit": "G" 
+            "value": 3072
             },
         "routes":{
             "operator": "==",
