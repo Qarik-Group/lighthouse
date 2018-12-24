@@ -3,6 +3,7 @@
 * [Vault](#vault)
 * [Cloud Foundry](#cloud-foundry)
 * [BOSH](#bosh)
+* [Writing Tests](#writing-tests)
 
 ## Vault
 
@@ -125,4 +126,35 @@ Command:
 
 ```bash
 bin/lh login bosh
+```
+
+##Writing Tests
+
+### Tracing and Debuging
+
+The environment variables LH_TRACE and LH_DEBUG can be tested for existence
+The value of these environment variables are unused at the moment.
+```bash
+   [[ ${LH_TRACE+yes} == "yes"]] && {
+   }
+   [[ ${LH_TRACE+yes} == "yes"]] && {
+   }
+```
+The lighthouse command also supports -t and -d for setting the tracing and debugging flags before the sub-command.
+
+```bash
+lh -t -d test
+```
+
+Tests should be written assuming the authentication has already occurred.  
+While developing tests, you can just keeping running the over and over again.
+
+```bash
+tests/cf/quotas.sh
+```
+
+The lh run command has the -s flag to skip the default login
+
+```bash
+lh run -s tests/cf/quotas.sh
 ```
