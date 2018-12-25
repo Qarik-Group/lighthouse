@@ -208,12 +208,12 @@ run_individual_test() {
 
 #TODO figure out if we want a more complicated setting
 enable_lh_debug() {
-    export LH_DEBUG=1
+    export LH_DEBUG=
 }
 
 #TODO figure out if we want a more complicated setting
 enable_lh_trace() {
-    export LH_TRACE=1
+    export LH_TRACE=
 }
 
 
