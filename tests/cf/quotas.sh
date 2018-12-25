@@ -206,5 +206,5 @@ else
     lh_result="false"
 fi
 
-# rm -f /tmp/lh/${quota_dataset}
+rm -f /tmp/lh/${quotas_dataset}
 [[ "${lh_result}" == "true" ]]
