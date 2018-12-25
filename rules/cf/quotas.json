@@ -1,6 +1,6 @@
 [
     {
-        "quota_name": "dm-smoketest-quota",
+        "quota_name": "default",
         "total_memory":{
             "operator": ">=",
             "value": 3072
