@@ -11,7 +11,18 @@ query_cf_api()
     dataset="/tmp/lh/apps.$$/dataset.${i}"
     while [[ "${next_url}" != "null" ]]; do
         cf curl "${next_url}" > "${dataset}"
-        # TODO error handling
+        if [[ $(jq '[type=="object",length==3,has("error_code","code","description")]|all' ${dataset}) == "true" ]]
+        then
+            cp ${dataset} "/tmp/lh/${result_file}"
+            rm -rf /tmp/lh/apps.$$
+            return 1  # cf detected an error
+        fi
+        if [[ $(jq '[type=="object",has("next_url","prev_url","total_results","total_pages")]|all' ${dataset}) == "false" ]]
+        then
+            cp ${dataset} "/tmp/lh/${result_file}"
+            rm -rf /tmp/lh/apps.$$
+            return 2 # unexpected output for this fuction
+        fi
         datasets[i]="${dataset}"
         next_url=$(jq -r -c ".next_url" "${dataset}")
         ((i += 1))
@@ -21,6 +32,7 @@ query_cf_api()
     # TODO error handling if no files created
     jq -s 'map(.resources[])' "${datasets[@]}" > "/tmp/lh/${result_file}"
     rm -rf /tmp/lh/apps.$$
+    return 0
 }
 
 find_instance_name()
