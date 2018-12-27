@@ -1,10 +1,54 @@
 #!/usr/bin/env bash
+. lib/output.sh
 
 STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
 
 # read in configuration variables, when the file exits
 # it will not exist in piplines that run containers for example.
 [[ -s "config.env" ]] && source "config.env"
+
+component_tests() {
+    component=$1
+    
+    ####
+    STEP "Running ${component} tests."
+    ####
+    
+    component_path="tests/${component}/included"
+    if [ valid_test_path "${component_path}" ]; then
+      . ${component_path}
+    fi
+}
+
+valid_test_path() {
+    test_path=$1
+    if [ ! -x "${test_path}" ]; then
+      not_ok "Test '${test_path}' does not exist or is not executable; skipping."
+      return 1
+    else
+      return 0
+    fi
+}
+
+help_arg_passed() {
+    inputs=("$@")
+    for i in "${inputs[@]}"; do
+      if [[ "${i}" == "-h" || "${i}" == "--help" || "${i}" == "help" ]]; then
+        return 0
+      fi
+    done
+    return 1
+}
+
+skip_login_arg_passed() {
+    inputs=("$@")
+    for i in "${inputs[@]}"; do
+      if [[ "${i}" == "-s" ]]; then
+        return 0
+      fi
+    done
+    return 1
+}
 
 bosh_login() {
 
@@ -129,7 +173,7 @@ check_dependencies() {
     STEP "Checking software dependencies."
     ####
         
-    for command in "jq" "cf" "bosh" "safe" "make"; do
+    for command in "jq" "cf" "bosh" "safe" "make" "uaa"; do
         type ${command} > /dev/null
         if [[ $? > 0 ]]; then
             echo "The ${command} is not found.  Please install before proceeding."
@@ -154,6 +198,21 @@ safe_logout() {
     ####
 
     safe target delete ${VAULT_ALIAS}
+}
+
+uaa_login() {
+  
+    ####
+    STEP "Logging into UAA."
+    ####
+    
+}
+
+uaa_logout() {
+  
+    ####
+    STEP "Logged out of UAA."
+    ####
 }
 
 # top level commands
@@ -195,15 +254,10 @@ run_test() {
 }
 
 run_individual_test() {
-    [[ $1 -eq 0 ]] && login
-    if [[ -x $2 ]] 
-    then
-        . $2
-    else
-        echo "test $2 does not exist or is not executable"
-        false
+    [[ "${skip_login}" -ne 0 ]] && login
+    if valid_test_path $1 ; then
+      . $1
     fi
-    exit $?
 }
 
 #TODO figure out if we want a more complicated setting
@@ -248,7 +302,11 @@ test_usage() {
 }
 
 run_usage() {
-    echo "       [path to test]: run this test."
+    echo "Usage: ${0} [options] path1 [path2] [path3] ... [pathN]"
+    echo "  Takes one or more paths to test scripts and runs them if possible."
+    echo "  Will login to each component unless instructed otherwise."
+    echo "  Options:"
+    echo "    -s: skip login to bosh, cf, and uaa."
     exit 1
 }
 
@@ -258,7 +316,7 @@ usage() {
     echo "  logout -- logout of safe, BOSH and CF."
     echo "  check  -- check for dependencies or signed in."
     echo "  test   -- run all tests."
-    echo "  run    -- run a single test."
+    echo "  run    -- run a specific test or set of tests."
     exit 1
 }
 
@@ -269,6 +327,7 @@ then
 fi
 
 # only do what the man says to do
+<<<<<<< HEAD
 while (($# > 0)) 
 do
     case "$1" in
@@ -418,3 +477,150 @@ do
             ;;
     esac
 done
+=======
+case "$1" in
+    login)
+        shift
+        if help_arg_passed $@; then
+          login_usage
+        fi
+        while [[ $# -gt 0 ]]; do
+            case "$1" in           
+                bosh)
+                    bosh_login
+                    exit 0
+                    ;;
+                cf)
+                    cf_login
+                    exit 0
+                    ;;
+                safe)
+                    safe_login
+                    exit 0
+                    ;;
+                uaa)
+                    uaa_login
+                    exit 0
+                    ;;
+                *)
+                    login_usage
+                    exit 0
+                    ;;
+            esac
+            shift
+        done
+        login "$@"
+        ;;
+    logout)
+        shift
+        if help_arg_passed $@; then
+          logout_usage
+        fi
+        while [[ $# -gt 0 ]]; do
+            case "$1" in           
+                bosh)
+                    bosh_logout
+                    exit 0
+                    ;;
+                cf)
+                    cf_logout
+                    exit 0
+                    ;;
+                safe)
+                    safe_logout
+                    exit 0
+                    ;;
+                uaa)
+                    uaa_logout
+                    exit 0
+                    ;;
+                *)
+                    logout_usage
+                    exit 0
+                    ;;
+            esac
+            shift
+        done
+        logout "$@"
+        ;;
+    test)
+        shift
+        if help_arg_passed $@; then
+          test_usage
+        fi
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                cf)
+                    cf_tests
+                    exit 0
+                    ;;
+                bosh)
+                    bosh_tests
+                    exit 0
+                    ;;
+                uaa)
+                    component_tests 'uaa'
+                    exit 0
+                    ;;
+                *)
+                    test_usage
+                    exit 0
+                    ;;
+            esac
+            shift
+        done
+        run_test "$@"
+        ;;
+    check)
+        shift
+        if help_arg_passed $@; then
+          check_usage
+        fi
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                dependencies)
+                    check_dependencies
+                    exit 0
+                    ;;
+                safe)
+                    check_safe
+                    exit 0
+                    ;;
+                *)
+                    check_usage
+                    exit 0
+                    ;;
+            esac
+            shift
+        done
+        check "$@"
+        ;;
+    run)
+        shift
+        skip_login_arg_passed $@
+        skip_login=$?
+
+        # if no args are passed, only the skip login is passed, or the help arg is passed
+        if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]] || help_arg_passed $@; then
+          run_usage
+        fi
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -s) # already captured so ignore
+                  shift
+                  continue
+                  ;;
+                *)
+                  echo "Running test $1"
+                    run_individual_test "$1"
+                    ;;
+            esac
+            shift
+        done
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
+>>>>>>> rework run feature to run multiple tests, add skip login option, catch help arg in any position
