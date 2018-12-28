@@ -88,14 +88,14 @@ has_any_quota_plans()
 
 does_quota_plan_exist()
 {
-    declare plan="${1:?Missing quota plan argument}"
+    declare plan="${1:?Missing quota plan argument   $(caller 0)}"
     jq --arg plan "${plan}" -r '.[].entity|select(.name==$plan)|.name==$plan' "/tmp/lh/${quotas_dataset}"
 }
 
 get_quota_value()
 {
-    declare plan="${1:?Missing quota plan argument}"
-    declare quota="${2:?Missing quota argument}"
+    declare plan="${1:?Missing quota plan argument   $(caller 0)}"
+    declare quota="${2:?Missing quota argument   $(caller 0)}"
     quota=${quota_map[${quota}]}
     jq --arg plan "${plan}" --arg quota "${quota}" -r '.[].entity|select(.name==$plan)|.[$quota]' "/tmp/lh/${quotas_dataset}"
 }
@@ -107,22 +107,22 @@ get_test_array_length()
 
 get_test_quota_name()
 {
-    declare idx="${1:?Missing test index argument}"
+    declare idx="${1:?Missing test index argument   $(caller 0)}"
     jq --arg i ${idx} -r '.[$i|tonumber]|.quota_name|@sh' ${validation_data}
 }
 
 get_test_quota()
 {
-    declare idx="${1:?Missing test index argument}"
-    declare quota_set="${2:?Missing quota set argument}"
-    declare quota="${3:?Missing quota argument}"
+    declare idx="${1:?Missing test index argument   $(caller 0)}"
+    declare quota_set="${2:?Missing quota set argument   $(caller 0)}"
+    declare quota="${3:?Missing quota argument   $(caller 0)}"
     jq --arg i "${idx}" --arg qs "${quota_set}" --arg q "${quota}" -r '.[$i|tonumber]|select(.quota_name==$qs)|.[$q]|(.operator//"",.value//"")|@sh' ${validation_data}
 }
 
 get_test_quota_list()
 {
-    declare idx="${1:?Missing test index argument}"
-    declare quota_set="${2:?Missing quota set argument}"
+    declare idx="${1:?Missing test index argument   $(caller 0)}"
+    declare quota_set="${2:?Missing quota set argument   $(caller 0)}"
     jq --arg i "${idx}" --arg qs "${quota_set}" -r '.[$i|tonumber]|select(.quota_name==$qs)|(keys-["quota_name"])|.[]' ${validation_data}
 }
 

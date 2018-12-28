@@ -26,30 +26,30 @@ fab_validate_description()
 
 get_org_space_url()
 {
-    declare org="${1:?Missing org argument}"
+    declare org="${1:?Missing org argument$(caller 0)}"
     query_cf_api "/v2/organizations?q=name:${org}" "${org_dataset}"
     jq --arg org "${org}" -r '.[].entity|select(.name==$org)|.spaces_url' "/tmp/lh/${org_dataset}"
 }
 
 does_space_exist()
 {
-    declare space="${1:?Missing space argument}"
-    declare dataset="${2:?Missing organization dataset argument}"
+    declare space="${1:?Missing space argument$(caller 0)}"
+    declare dataset="${2:?Missing organization dataset argument$(caller 0)}"
     jq --arg space "${space}" -r '.[]|.entity|select(.name==$space)|.name==$space' "/tmp/lh/${dataset}"
 }
 
 get_space_apps_url()
 {
-    declare space_url="${1:?Missing org argument}"
-    declare space="${2:?Missing space argument}"
+    declare space_url="${1:?Missing org argument$(caller 0)}"
+    declare space="${2:?Missing space argument$(caller 0)}"
     query_cf_api "${spaces_url}" "${spaces_dataset}"
     jq --arg space "${space}" -r '.[].entity|select(.name==$space)|.apps_url' "/tmp/lh/${spaces_dataset}"
 }
 
 does_app_exist()
 {
-    declare app="${1:?Missing space argument}"
-    declare dataset="${2:?Missing apps dataset argument}"
+    declare app="${1:?Missing space argument$(caller 0)}"
+    declare dataset="${2:?Missing apps dataset argument$(caller 0)}"
     jq --arg app "${app}" -r '.[]|.entity|select(.name==$app)|.name==$app' "/tmp/lh/${dataset}"
 }
 
@@ -60,19 +60,19 @@ get_test_array_length()
 
 get_test_org()
 {
-    declare idx="${1:?Missing test index argument}"
+    declare idx="${1:?Missing test index argument$(caller 0)}"
     jq --arg i ${idx} -r '.[$i|tonumber]|.org|@sh' ${validation_data}
 }
 
 get_test_space()
 {
-    declare idx="${1:?Missing test index argument}"
+    declare idx="${1:?Missing test index argument$(caller 0)}"
     jq --arg i ${idx} -r '.[$i|tonumber]|.space|@sh' ${validation_data}
 }
 
 get_test_apps_list()
 {
-    declare idx="${1:?Missing test index argument}"
+    declare idx="${1:?Missing test index argument$(caller 0)}"
     jq --arg i ${idx} -r '.[$i|tonumber]|.apps|.[]|@sh' ${validation_data}
 }
 

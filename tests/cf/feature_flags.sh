@@ -21,12 +21,12 @@ fab_validate_data()
 }
 
 feature_flag_exists() {
-    declare feature_flag="${1:?Missing feature flag argument}"
+    declare feature_flag="${1:?Missing feature flag argument   $(caller 0)}"
     jq "[.[] | select(.name==\"${feature_flag}\") ]| length" "${dataset}"
 }
 
 feature_flag_enabled() {
-    declare feature_flag="${1:?Missing feature flag argument}"
+    declare feature_flag="${1:?Missing feature flag argument   $(caller 0)}"
     jq ".[] | select(.name==\"${feature_flag}\") | .enabled" "${dataset}"
 }
 
