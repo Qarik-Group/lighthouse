@@ -2,8 +2,8 @@
 
 query_cf_api()
 {
-    declare next_url="${1:?Missing cf api url $(caller 0)}"
-    declare result_file="${2:?Missing result filename $(caller 0)}"
+    declare next_url="${1:?Missing cf api url   $(caller 0)}"
+    declare result_file="${2:?Missing result filename   $(caller 0)}"
     declare -i i=0
     declare dataset
     declare -a datasets
@@ -37,7 +37,7 @@ query_cf_api()
 
 find_instance_name()
 {
-    declare deployment="${1:?Missing deployment name $(caller 0)}"
+    declare deployment="${1:?Missing deployment name   $(caller 0)}"
     declare dataset
     mkdir -p /tmp/lh/vms.$$
     dataset=$(mktemp /tmp/instances.XXXXXX)
