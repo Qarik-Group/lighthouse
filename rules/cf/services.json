@@ -1,0 +1,17 @@
+[
+    {
+        "org": "",
+        "space": "",
+        "services":[
+            "C-byou",
+            "C-gslb",
+            "C-mongodb",
+            "C-postgresql",
+            "C-proxy",
+            "Rabbitmq",
+            "Redis",
+            "MySql",
+            "SendGrid"
+        ]
+    }
+]

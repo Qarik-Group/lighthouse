@@ -1,0 +1,8 @@
+{
+    "running": {
+    },
+    "staging": {
+        "name": [1,2,3],
+        "fake_haproxy": "https://127.0.0.1"
+    }
+}
