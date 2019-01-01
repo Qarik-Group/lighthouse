@@ -35,6 +35,20 @@ query_cf_api()
     return 0
 }
 
+#For when a query does not use the next_url convention
+query_cf_raw_api()
+{
+    declare url="${1:?Missing cf api url   $(caller 0)}"
+    declare result_file="${2:?Missing result filename   $(caller 0)}"
+    declare dataset="/tmp/lh/${result_file}"
+    cf curl "${url}" > "${dataset}"
+    if [[ $(jq '[type=="object",length==3,has("error_code","code","description")]|all' ${dataset}) == "true" ]]
+    then
+        return 1  # cf detected an error
+    fi
+    return 0
+}
+
 find_instance_name()
 {
     declare deployment="${1:?Missing deployment name   $(caller 0)}"
