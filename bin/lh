@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-. lib/output.sh
 
 STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
 
 # read in configuration variables, when the file exits
 # it will not exist in piplines that run containers for example.
 [[ -s "config.env" ]] && source "config.env"
+. lib/output.sh
 
-component_tests() {
+component_test() {
     component=$1
     
     ####
@@ -15,27 +15,27 @@ component_tests() {
     ####
     
     component_path="tests/${component}/included"
-    if [ valid_test_path "${component_path}" ]; then
-      . ${component_path}
+    if valid_test_path "${component_path}" ; then
+        . ${component_path}
     fi
 }
 
 valid_test_path() {
     test_path=$1
-    if [ ! -x "${test_path}" ]; then
-      not_ok "Test '${test_path}' does not exist or is not executable; skipping."
-      return 1
+    if [ ! -f "${test_path}" ]; then
+        not_ok "Test '${test_path}' does not exist; skipping."
+        return 1
     else
-      return 0
+        return 0
     fi
 }
 
 help_arg_passed() {
     inputs=("$@")
     for i in "${inputs[@]}"; do
-      if [[ "${i}" == "-h" || "${i}" == "--help" || "${i}" == "help" ]]; then
-        return 0
-      fi
+        if [[ "${i}" == "-h" || "${i}" == "--help" || "${i}" == "help" ]]; then
+            return 0
+        fi
     done
     return 1
 }
@@ -43,9 +43,9 @@ help_arg_passed() {
 skip_login_arg_passed() {
     inputs=("$@")
     for i in "${inputs[@]}"; do
-      if [[ "${i}" == "-s" ]]; then
-        return 0
-      fi
+        if [[ "${i}" == "-s" ]]; then
+            return 0
+        fi
     done
     return 1
 }
@@ -206,6 +206,15 @@ uaa_login() {
     STEP "Logging into UAA."
     ####
     
+    # Environment Variables
+    UAA_USER="admin"
+    UAA_PASSWORD=$(safe get ${VAULT_PATH}/cf/uaa/client_secrets:admin_client)
+    UAA_ADDR=$(safe get secret/exodus/${BASE_ENV}/cf:uaa_url)
+    
+    # Set the target UAA
+    uaa target ${UAA_ADDR} --skip-ssl-validation
+    # Authenticate
+    uaa get-client-credentials-token ${UAA_USER} -s ${UAA_PASSWORD}
 }
 
 uaa_logout() {
@@ -213,6 +222,9 @@ uaa_logout() {
     ####
     STEP "Logged out of UAA."
     ####
+    
+    # logout not implemented in cli, so clear UAA profile
+    rm -rf ~/.uaa/*
 }
 
 # top level commands
@@ -246,11 +258,6 @@ logout() {
     ####
     STEP "Logged out of all systems."
     ####
-}
-
-run_test() {
-    bosh_tests
-    cf_tests
 }
 
 run_individual_test() {
@@ -503,8 +510,9 @@ case "$1" in
                     exit 0
                     ;;
                 *)
+                    echo "Unrecognized argument: '${1}'"
                     login_usage
-                    exit 0
+                    exit 1
                     ;;
             esac
             shift
@@ -535,8 +543,9 @@ case "$1" in
                     exit 0
                     ;;
                 *)
+                    echo "Unrecognized argument: '${1}'"
                     logout_usage
-                    exit 0
+                    exit 1
                     ;;
             esac
             shift
@@ -546,35 +555,33 @@ case "$1" in
     test)
         shift
         if help_arg_passed $@; then
-          test_usage
+            test_usage
         fi
-        while [[ $# -gt 0 ]]; do
-            case "$1" in
-                cf)
-                    cf_tests
-                    exit 0
-                    ;;
-                bosh)
-                    bosh_tests
-                    exit 0
-                    ;;
-                uaa)
-                    component_tests 'uaa'
-                    exit 0
-                    ;;
-                *)
-                    test_usage
-                    exit 0
-                    ;;
-            esac
-            shift
-        done
-        run_test "$@"
+        # If no args, run all tests
+        if [[ $# -eq 0 ]]; then
+            for i in "bosh" "cf" "uaa"; do
+                component_test "${i}"
+            done
+        else
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    cf|bosh|uaa)
+                        component_test "${1}"
+                        ;;
+                    *)
+                        echo "Unrecognized argument: '${1}'"
+                        test_usage
+                        exit 1
+                        ;;
+                esac
+                shift
+            done
+        fi
         ;;
     check)
         shift
         if help_arg_passed $@; then
-          check_usage
+            check_usage
         fi
         while [[ $# -gt 0 ]]; do
             case "$1" in
@@ -587,8 +594,9 @@ case "$1" in
                     exit 0
                     ;;
                 *)
+                    echo "Unrecognized argument: '${1}'"
                     check_usage
-                    exit 0
+                    exit 1
                     ;;
             esac
             shift
@@ -602,7 +610,7 @@ case "$1" in
 
         # if no args are passed, only the skip login is passed, or the help arg is passed
         if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]] || help_arg_passed $@; then
-          run_usage
+            run_usage
         fi
         while [[ $# -gt 0 ]]; do
             case "$1" in

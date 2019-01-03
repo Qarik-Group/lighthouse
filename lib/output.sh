@@ -36,6 +36,12 @@ info() {
     return 0
 }
 
+warn() {
+    declare message="$@"
+    declare status="ERROR"
+    printf "${YELLOW}%-7s${RESET} %-.70s\n" " ${status}" "${message}"
+}
+
 ok() {
     declare message="$@"
     declare status="PASSED"

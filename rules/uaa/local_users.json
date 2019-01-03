@@ -1,0 +1,24 @@
+[
+    {
+        "userName": "admin",
+        "active": true,
+        "groups": [
+            "cloud_controller.admin"
+        ]
+    },
+    {
+        "userName": "fred",
+        "active": true,
+        "groups": [
+            "spacecadet"
+        ]
+    },
+    {
+        "userName": "tpol",
+        "active": true,
+        "groups": [
+            "cloud_controller.write"
+        ]
+    }
+    
+]
