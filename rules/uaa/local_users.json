@@ -7,17 +7,18 @@
         ]
     },
     {
-        "userName": "fred",
+        "userName": "intentional_fail",
         "active": true,
         "groups": [
-            "spacecadet"
+            "non-existing_group"
         ]
     },
     {
         "userName": "tpol",
         "active": true,
         "groups": [
-            "cloud_controller.write"
+            "cloud_controller.write",
+            "non-existing_group"
         ]
     }
     
