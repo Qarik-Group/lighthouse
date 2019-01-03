@@ -195,10 +195,27 @@ run_test() {
 }
 
 run_individual_test() {
-    login
-    . $1
+    [[ $1 -eq 0 ]] && login
+    if [[ -x $2 ]] 
+    then
+        . $2
+    else
+        echo "test $2 does not exist or is not executable"
+        false
+    fi
     exit $?
 }
+
+#TODO figure out if we want a more complicated setting
+enable_lh_debug() {
+    export LH_DEBUG=
+}
+
+#TODO figure out if we want a more complicated setting
+enable_lh_trace() {
+    export LH_TRACE=
+}
+
 
 # teach a man to CLI
 
@@ -245,136 +262,159 @@ usage() {
     exit 1
 }
 
+if (($# == 0))
+then
+    usage
+    exit 1
+fi
+
 # only do what the man says to do
-case "$1" in
-    login)
-        shift
-        while [[ $# -gt 0 ]]; do
-            case "$1" in
-                -h|--help|help)
-                    login_usage
-                    exit 0
-                    ;;            
-                bosh)
-                    bosh_login
-                    exit 0
-                    ;;
-                cf)
-                    cf_login
-                    exit 0
-                    ;;
-                safe)
-                    safe_login
-                    exit 0
-                    ;;
-                *)
-                    login_usage
-                    exit 0
-                    ;;
-            esac
+while (($# > 0)) 
+do
+    case "$1" in
+        -d)
             shift
-        done
-        login "$@"
-        ;;
-    logout)
-        shift
-        while [[ $# -gt 0 ]]; do
-            case "$1" in
-                -h|--help|help)
-                    logout_usage
-                    exit 0
-                    ;;            
-                bosh)
-                    bosh_logout
-                    exit 0
-                    ;;
-                cf)
-                    cf_logout
-                    exit 0
-                    ;;
-                safe)
-                    safe_logout
-                    exit 0
-                    ;;
-                *)
-                    logout_usage
-                    exit 0
-                    ;;
-            esac
+            enable_lh_debug
+            ;;
+        -t)
             shift
-        done
-        logout "$@"
-        ;;
-    test)
-        shift
-        while [[ $# -gt 0 ]]; do
-            case "$1" in
-                -h|--help|help)
-                    test_usage
-                    exit 0
-                    ;;
-                cf)
-                    cf_tests
-                    exit 0
-                    ;;
-                bosh)
-                    bosh_tests
-                    exit 0
-                    ;;
-                *)
-                    test_usage
-                    exit 0
-                    ;;
-            esac
+            enable_lh_trace
+            ;;
+
+        login)
             shift
-        done
-        run_test "$@"
-        ;;
-    check)
-        shift
-        while [[ $# -gt 0 ]]; do
-            case "$1" in
-                -h|--help|help)
-                    check_usage
-                    exit 0
-                    ;;
-                dependencies)
-                    check_dependencies
-                    exit 0
-                    ;;
-                safe)
-                    check_safe
-                    exit 0
-                    ;;
-                *)
-                    check_usage
-                    exit 0
-                    ;;
-            esac
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    -h|--help|help)
+                        login_usage
+                        exit 0
+                        ;;            
+                    bosh)
+                        bosh_login
+                        exit 0
+                        ;;
+                    cf)
+                        cf_login
+                        exit 0
+                        ;;
+                    safe)
+                        safe_login
+                        exit 0
+                        ;;
+                    *)
+                        login_usage
+                        exit 0
+                        ;;
+                esac
+                shift
+            done
+            login "$@"
+            ;;
+        logout)
             shift
-        done
-        check "$@"
-        ;;
-    run)
-        shift
-        while [[ $# -gt 0 ]]; do
-            echo "Running test $1"
-            case "$1" in
-                -h|--help|help)
-                    run_usage
-                    exit 0
-                    ;;
-                *)
-                    run_individual_test "$1"
-                    exit 0
-                    ;;
-            esac
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    -h|--help|help)
+                        logout_usage
+                        exit 0
+                        ;;            
+                    bosh)
+                        bosh_logout
+                        exit 0
+                        ;;
+                    cf)
+                        cf_logout
+                        exit 0
+                        ;;
+                    safe)
+                        safe_logout
+                        exit 0
+                        ;;
+                    *)
+                        logout_usage
+                        exit 0
+                        ;;
+                esac
+                shift
+            done
+            logout "$@"
+            ;;
+        test)
             shift
-        done
-        run_usage
-        ;;
-    *)
-        usage
-        exit 1
-        ;;
-esac
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    -h|--help|help)
+                        test_usage
+                        exit 0
+                        ;;
+                    cf)
+                        cf_tests
+                        exit 0
+                        ;;
+                    bosh)
+                        bosh_tests
+                        exit 0
+                        ;;
+                    *)
+                        test_usage
+                        exit 0
+                        ;;
+                esac
+                shift
+            done
+            run_test "$@"
+            ;;
+        check)
+            shift
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    -h|--help|help)
+                        check_usage
+                        exit 0
+                        ;;
+                    dependencies)
+                        check_dependencies
+                        exit 0
+                        ;;
+                    safe)
+                        check_safe
+                        exit 0
+                        ;;
+                    *)
+                        check_usage
+                        exit 0
+                        ;;
+                esac
+                shift
+            done
+            check "$@"
+            ;;
+        run)
+            shift
+            skip_login=0
+            while [[ $# -gt 0 ]]; do
+                echo "Running test $1"
+                case "$1" in
+                    -h|--help|help)
+                        run_usage
+                        exit 0
+                        ;;
+                    -s) shift
+                        skip_login=1
+                        continue
+                        ;;
+                    *)
+                        run_individual_test "${skip_login}" "$1"
+                        exit 0
+                        ;;
+                esac
+                shift
+            done
+            run_usage
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+    esac
+done
