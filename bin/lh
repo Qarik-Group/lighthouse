@@ -239,6 +239,7 @@ login() {
     safe_login
     bosh_login
     cf_login
+    uaa_login
 
     #TODO: ensure that if an error raised in previous functions
     #they will break before this STEP.
@@ -252,6 +253,7 @@ logout() {
     safe_logout
     bosh_logout
     cf_logout
+    uaa_logout
 
     #TODO: ensure that if an error raised in previous functions
     #they will break before this STEP.
