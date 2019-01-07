@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 
+. lib/bash.sh
 . lib/curl.sh
 . lib/output.sh
+
+
+# make sure we have associative arrays and -v testing
+
+need_bash_minimum_version 4 3 || {
+    active "Quota Plans Testing"
+    not_ok "Bash version is too old - Want: 4 3   Got: ${BASH_VERSINFO[0]} ${BASH_VERSINFO[1]} ${BASH_VERSINFO[2]}"
+    exit 1
+}
 
 quotas_dataset="quota_$$"
 validation_data="rules/cf/quotas.json"
