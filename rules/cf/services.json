@@ -1,7 +1,6 @@
 [
     {
-        "org": "",
-        "space": "",
+        "public": true,
         "services":[
             "C-byou",
             "C-gslb",
