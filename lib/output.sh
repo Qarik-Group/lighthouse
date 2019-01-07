@@ -51,7 +51,7 @@ not_ok() {
     declare status="FAILED"
     printf "${RED}%-7s${RESET}\n" "${status}"
     [[ -n "${message}" ]] && {
-        printf "${YELLOW}REASON${RESET} %-.70s\n" "${message}"
+        printf "${YELLOW}REASON ${RESET} %-.70s\n" "${message}"
     }
     return 0
 }
