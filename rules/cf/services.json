@@ -10,7 +10,14 @@
             "Rabbitmq",
             "Redis",
             "MySql",
-            "SendGrid"
+            "rediscloud",
+            "sendgrid"
+        ]
+    },
+    {
+        "public": false,
+        "services":[
+            "amazon-s3-starkandwayne-blog-production"
         ]
     }
 ]
