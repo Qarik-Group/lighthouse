@@ -1,0 +1,25 @@
+[
+    {
+        "userName": "admin",
+        "active": true,
+        "groups": [
+            "cloud_controller.admin"
+        ]
+    },
+    {
+        "userName": "intentional_fail",
+        "active": true,
+        "groups": [
+            "non-existing_group"
+        ]
+    },
+    {
+        "userName": "tpol",
+        "active": true,
+        "groups": [
+            "cloud_controller.write",
+            "non-existing_group"
+        ]
+    }
+    
+]

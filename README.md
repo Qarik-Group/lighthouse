@@ -14,6 +14,7 @@ With lighthouse, you can run a quick series of tests to make sure things will be
 * [cf-cli](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html)
 * [bosh-cli](https://bosh.io/docs/cli-v2-install/)
 * [safe](https://github.com/starkandwayne/safe#attention-homebrew-users)
+* [uaa](docs/install-uaa.md)
 
 ### Get Software
 
