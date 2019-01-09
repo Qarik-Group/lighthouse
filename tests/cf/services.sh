@@ -1,16 +1,9 @@
 #!/usr/bin/env bash
 
-. lib/bash.sh
 . lib/curl.sh
 . lib/output.sh
 
 # make sure we have associative arrays and -v testing
-
-need_bash_minimum_version 4 3 || {
-    active "Services Testing "
-    not_ok "Bash version is too old - Want: >= 4 3   Got: ${BASH_VERSINFO[0]} ${BASH_VERSINFO[1]} ${BASH_VERSINFO[2]}"
-    exit 1
-}
 
 validation_data="rules/cf/services.json"
 dataset="services_$$"
@@ -54,7 +47,17 @@ get_service_plan_info()
 {
     query_cf_api "/v2/services" ${dataset}
     query_cf_api "/v2/service_plans" ${plans_dataset}
-    jq --slurpfile services /tmp/lh/${dataset} --slurpfile plans /tmp/lh/${plans_dataset}  -n '[[$services[]|.[]|{sguid:.metadata.guid,name:.entity.label}] as $lookup|$plans[]|[.[].entity as $q|{g:$q.service_guid,a:$q.active,p:$q.public,f:$q.free,b:$q.bindable,sn:($lookup[]|select(.sguid==$q.service_guid)|.name),sp:$q.name,c:0}]|group_by(.g,.a,.p,.f,.b)[]|(.[0].c=length)|(.[0].sp=([.[].sp]|join(", ")))|.[0]]' >"/tmp/lh/${aggregated_plans_dataset}"
+    jq --slurpfile services /tmp/lh/${dataset} --slurpfile plans /tmp/lh/${plans_dataset} -n '[[$services[]|.[]|
+                {sguid:.metadata.guid,name:.entity.label}] as $lookup|
+              $plans[]|[.[].entity as $q|
+                {g:$q.service_guid,a:$q.active,p:$q.public,f:$q.free,
+                 b:$q.bindable,
+                 sn:($lookup[]|select(.sguid==$q.service_guid)|.name),
+                 sp:$q.name,c:0}]
+                |group_by(.g,.a,.p,.f,.b)[]|
+                (.[0].c=length)|
+                (.[0].sp=([.[].sp]|join(", ")))|
+             .[0]]' >"/tmp/lh/${aggregated_plans_dataset}"
 }
 
 get_aggregated_services()
