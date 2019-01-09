@@ -19,9 +19,6 @@ aggregated_plans_dataset="aggregated_plans_$$"
 
 lh_result="true"
 
-declare -A map_guid_to_service_name
-declare -A map_service_name_to_guid
-
 fab_validate_data()
 {
     jq -r '[(type=="array",length > 0),
@@ -53,49 +50,24 @@ get_test_service_list()
     jq --arg i ${idx} -r '.[$i|tonumber]|.services|.[]|@sh' ${validation_data}
 }
 
-get_service_info()
-{
-    jq -r '.[]|[.metadata.guid,.entity.label,.entity.active,.entity.bindable]|@tsv' "/tmp/lh/${dataset}"
-}
-
 get_service_plan_info()
 {
+    query_cf_api "/v2/services" ${dataset}
     query_cf_api "/v2/service_plans" ${plans_dataset}
-    jq -r '.[]|[.entity.name,.entity.service_guid,.entity.active,.entity.free,.entity.public,.entity.bindable]|@tsv' "/tmp/lh/${plans_dataset}"
-}
-
-get_service_plan_info2()
-{
-    query_cf_api "/v2/service_plans" ${plans_dataset}
-    jq '[[.[].entity|{g:.service_guid,a:.active,p:.public,f:.free,b:.bindable,sp:.name,c:0}]|group_by(.g,.a,.p,.f,.b)[]|(.[0].c=length)|(.[0].sp=([.[].sp]|join(", ")))|.[0]]' "/tmp/lh/${plans_dataset}" >"/tmp/lh/${aggregated_plans_dataset}"
+    jq --slurpfile services /tmp/lh/${dataset} --slurpfile plans /tmp/lh/${plans_dataset}  -n '[[$services[]|.[]|{sguid:.metadata.guid,name:.entity.label}] as $lookup|$plans[]|[.[].entity as $q|{g:$q.service_guid,a:$q.active,p:$q.public,f:$q.free,b:$q.bindable,sn:($lookup[]|select(.sguid==$q.service_guid)|.name),sp:$q.name,c:0}]|group_by(.g,.a,.p,.f,.b)[]|(.[0].c=length)|(.[0].sp=([.[].sp]|join(", ")))|.[0]]' >"/tmp/lh/${aggregated_plans_dataset}"
 }
 
 get_aggregated_services()
 {
-    declare guid="${1:?Missing service guid argument   $(caller 0)}"
-    jq --arg guid "${guid}" -r '.[]|select(.g==$guid)|[to_entries[].value]|@tsv' "/tmp/lh/${aggregated_plans_dataset}"
-}
-
-build_guid_and_service_name_maps()
-{
-    declare guid name active bindable
-    query_cf_api "/v2/services" ${dataset}
-    while IFS=$'\t' read guid name active bindable
-    do
-        # echo $guid $active $bindable $name
-        map_guid_to_service_name["${guid}"]="$name"
-        map_service_name_to_guid["${name}"]="$guid"
-    done < <(get_service_info)
+    declare service_name="${1:?Missing service name argument   $(caller 0)}"
+    jq --arg name "${service_name}" -r '.[]|select(.sn==$name)|[to_entries[].value]|@tsv' "/tmp/lh/${aggregated_plans_dataset}"
 }
 
 fab_test() {
     declare -i i tests
     declare service guid service_name
 
-    build_guid_and_service_name_maps
-    # echo "${!map_service_name_to_guid[@]}" 
-    
-    get_service_plan_info2
+    get_service_plan_info
 
     tests=$(get_test_array_length)
     for ((i=0; i < tests;i++))
@@ -108,29 +80,26 @@ fab_test() {
             declare display="public"
             [[ $test_public == 'false' ]] && display="private"
             active "Does sevice ${service_name} have ${display} plans?"
-            if [[ ${map_service_name_to_guid[${service_name}]+isset} == "isset" ]]
-            then
-                guid="${map_service_name_to_guid["${service_name}"]}" 
-                while IFS=$'\t' read service_guid active public free bindable plans plans_count 
-                do
-                    if [[ "${test_public}" == "${public}" ]]
-                    then
-                        (( match += plans_count ))
-                    else
-                        (( mismatch += plans_count ))
-                    fi
-                done < <(get_aggregated_services "${guid}")
-                if (( match > 0 ))
+            while IFS=$'\t' read sguid active public free bindable sname plans plans_count 
+            do
+                if [[ "${test_public}" == "${public}" ]]
                 then
-                    ok
+                    (( match += plans_count ))
                 else
-                    not_ok
-                    lh_result="false"
+                    (( mismatch += plans_count ))
                 fi
-            else
+            done < <(get_aggregated_services "${service_name}")
+            if (( match > 0 ))
+            then
+                ok
+            elif (( mismatch > 0 && match == 0 ))
+            then
+                not_ok "No ${display} plans found"
+                lh_result="false"
+            elif (( match == 0 && mismatch == 0 ))
+            then
                 not_ok "Service does not exist"
                 lh_result="false"
-                continue
             fi
         done
     done
@@ -152,11 +121,8 @@ unset -f fab_validate_description
 unset -f get_test_array_length
 unset -f get_test_public
 unset -f get_test_service_list
-unset -f get_service_info
 unset -f get_service_plan_info
-unset -f get_service_plan_info2
 unset -f get_aggregated_services
-unset -f build_guid_and_service_name_maps
 unset -f fab_test
 
 rm -f /tmp/lh/${dataset}

@@ -10,6 +10,7 @@
             "Rabbitmq",
             "Redis",
             "MySql",
+            "amazon-s3-starkandwayne-training",
             "rediscloud",
             "sendgrid"
         ]
