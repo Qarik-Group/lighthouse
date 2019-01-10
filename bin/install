@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+REPO_URL=https://github.com/krutten/lighthouse.git
+REPO_FOLDER=lighthouse
+
+# git clone the HTTPS version
+
+clone_repo() {
+    git clone $REPO_URL $REPO_FOLDER
+}
+
+# At this time, lighthouse only supports macOS
+#
+# Therefore we use homebrew package manager only.
+
+## Homebrew packages
+
+# Homebrew will not break on installing if the current version is installed.
+# Yet it will break if there is a new version available.
+#
+# When we put two commands in order, the second command only runs when the first
+# fails.  Yet it has a nasty "Error" when we try to upgrade, thus 2>/dev/null the
+# upgrade error.
+
+upgrade_or_install_brew_packages () {
+    brew upgrade jq 2>/dev/null || brew install jq
+    brew upgrade cloudfoundry/tap/cf-cli 2>/dev/null || brew install cloudfoundry/tap/cf-cli
+    brew upgrade cloudfoundry/tap/bosh-cli 2>/dev/null || brew install cloudfoundry/tap/bosh-cli
+    brew upgrade starkandwayne/cf/safe 2>/dev/null || brew install starkandwayne/cf/safe
+    brew upgrade starkandwayne/cf/uaa-cli 2>/dev/null || brew install starkandwayne/cf/uaa-cli
+}
+
+## Do the needful...
+
+echo "Installing brew packages..."
+
+upgrade_or_install_brew_packages
+
+# echo "Cloning repository..."
+
+# clone_repo

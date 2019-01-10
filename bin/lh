@@ -7,6 +7,13 @@ STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
 [[ -s "config.env" ]] && source "config.env"
 . lib/output.sh
 
+set-env() {
+    # take an environment name as a parameter
+    # create a template configuration file in the envs folder
+    # output to the user where the file is
+    echo "love is ${2}"
+}
+
 component_test() {
     component=$1
     
@@ -332,7 +339,7 @@ run_usage() {
 }
 
 usage() {
-    echo "Lighthouse: It's clear to come ashore."
+    echo "Lighthouse, near friendly shores."
     echo "  login  -- sign into vault with safe, then BOSH and CF with vault."
     echo "  logout -- logout of safe, BOSH and CF."
     echo "  check  -- check for dependencies or signed in."
@@ -451,6 +458,12 @@ case "$1" in
             done
         fi
         ;;
+    set-env)
+        if help_arg_passed $@; then
+            set-env_usage
+        fi
+        set-env "$@"
+        ;;        
     check)
         shift
         if help_arg_passed $@; then
