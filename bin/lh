@@ -210,7 +210,19 @@ uaa_login() {
     UAA_USER="admin"
     UAA_PASSWORD=$(safe get ${VAULT_PATH}/cf/uaa/client_secrets:admin_client)
     UAA_ADDR=$(safe get secret/exodus/${BASE_ENV}/cf:uaa_url)
-    
+
+    # Pull the UAA Address from Cloud Foundry if not explicitly set
+    if [[ ! "" == "$UAA_ADDR" ]]
+    then
+       echo "Using UAA from Vault: ${UAA_ADDR}"
+    else
+       CF_API="$( safe get secret/exodus/${BASE_ENV}/cf:api_url )"
+       echo "CFAPI: ${CF_API}"
+
+       UAA_ADDR=$(curl -k ${CF_API} |jq -r '.links.uaa.href')
+       echo "Pulled UAA from API: ${UAA_ADDR}"
+    fi
+
     # Set the target UAA
     uaa target ${UAA_ADDR} --skip-ssl-validation
     # Authenticate
