@@ -9,10 +9,6 @@ clone_repo() {
     git clone $REPO_URL $REPO_FOLDER
 }
 
-# At this time, lighthouse only supports macOS
-#
-# Therefore we use homebrew package manager only.
-
 ## Homebrew packages
 
 # Homebrew will not break on installing if the current version is installed.
@@ -36,6 +32,6 @@ echo "Installing brew packages..."
 
 upgrade_or_install_brew_packages
 
-# echo "Cloning repository..."
+echo "Cloning repository..."
 
-# clone_repo
+clone_repo
