@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-REPO_URL=https://github.com/krutten/lighthouse.git
+REPO_URL=https://github.com/starkandwayne/lighthouse.git
 REPO_FOLDER=lighthouse
 
 # git clone the HTTPS version
