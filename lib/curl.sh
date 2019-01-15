@@ -1,9 +1,37 @@
 #!/usr/bin/env bash
 
+query_get_error()
+{
+    declare dataset="${1:?Missing dataset file   $(caller 0)}"
+     
+    jq -c -r '"cf query failure: " + .description' "${dataset}"
+}
+
+query_get_error_codes()
+{
+    declare dataset="${1:?Missing dataset file   $(caller 0)}"
+     
+    jq -c -r '"(" + .error_code + " " + .code + ")"' "${dataset}"
+}
+
+query_has_error()
+{
+    declare dataset="${1:?Missing dataset path   $(caller 0)}"
+    jq '[type=="object",length==3,
+        has("error_code","code","description")]|all' "${dataset}"
+}
+
+has_multi_result_packet()
+{
+    declare dataset="${1:?Missing dataset path   $(caller 0)}"
+    jq '[type=="object",has("next_url","prev_url","total_results","total_pages")]|all' "${dataset}"
+}
+
 query_cf_api()
 {
     declare next_url="${1:?Missing cf api url   $(caller 0)}"
     declare result_file="${2:?Missing result filename   $(caller 0)}"
+    [[ ${next_url} == "x" ]] && { next_url=""; }
     declare -i i=0
     declare dataset
     declare -a datasets
@@ -11,13 +39,17 @@ query_cf_api()
     dataset="/tmp/lh/apps.$$/dataset.${i}"
     while [[ "${next_url}" != "null" ]]; do
         cf curl "${next_url}" > "${dataset}"
-        if [[ $(jq '[type=="object",length==3,has("error_code","code","description")]|all' ${dataset}) == "true" ]]
+        if (( $? > 0 ))
         then
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
             return 1  # cf detected an error
-        fi
-        if [[ $(jq '[type=="object",has("next_url","prev_url","total_results","total_pages")]|all' ${dataset}) == "false" ]]
+        elif [[ $(query_has_error "${dataset}") == "true" ]]
+        then
+            cp ${dataset} "/tmp/lh/${result_file}"
+            rm -rf /tmp/lh/apps.$$
+            return 1  # cf detected an error
+        elif [[ $(has_multi_result_packet "${dataset}") == "false" ]]
         then
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
@@ -42,11 +74,7 @@ query_cf_raw_api()
     declare result_file="${2:?Missing result filename   $(caller 0)}"
     declare dataset="/tmp/lh/${result_file}"
     cf curl "${url}" > "${dataset}"
-    if [[ $(jq '[type=="object",length==3,has("error_code","code","description")]|all' ${dataset}) == "true" ]]
-    then
-        return 1  # cf detected an error
-    fi
-    return 0
+    [[ $(query_has_error "${dataset}") == "false" ]]
 }
 
 find_instance_name()
