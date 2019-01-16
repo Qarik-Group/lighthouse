@@ -13,7 +13,7 @@ need_bash_minimum_version 4 3 || {
     exit 1
 }
 
-quotas_dataset="quota_$$"
+dataset="quota_$$"
 validation_data="rules/cf/quotas.json"
 
 lh_result="true"
@@ -32,7 +32,7 @@ quota_map["reserved_route_ports"]="total_reserved_route_ports"
 
 # echo "${!quota_map[@]}"
 
-fab_validate_data()
+lh_validate_data()
 {
     jq '[(type=="array",length > 0),
         (.[]|(type=="object"),(keys - [ "allow_paid_service_plans", "app_instances", "app_tasks",
@@ -81,25 +81,25 @@ fab_validate_data()
             )]|all' ${validation_data}
 }
 
-fab_validate_description()
+lh_validate_description()
 {
     echo "Expecting an array of quota objects." 
 }
 
 get_org_quota_plans()
 {
-    query_cf_api '/v2/quota_definitions' "${quotas_dataset}"
+    query_cf_api '/v2/quota_definitions' "${dataset}"
 }
 
 has_any_quota_plans()
 {
-    jq '.|(type=="array" and length>0)' "/tmp/lh/${quotas_dataset}"
+    jq '.|(type=="array" and length>0)' "/tmp/lh/${dataset}"
 }
 
 does_quota_plan_exist()
 {
     declare plan="${1:?Missing quota plan argument   $(caller 0)}"
-    jq --arg plan "${plan}" -r '.[].entity|select(.name==$plan)|.name==$plan' "/tmp/lh/${quotas_dataset}"
+    jq --arg plan "${plan}" -r '.[].entity|select(.name==$plan)|.name==$plan' "/tmp/lh/${dataset}"
 }
 
 get_quota_value()
@@ -107,7 +107,7 @@ get_quota_value()
     declare plan="${1:?Missing quota plan argument   $(caller 0)}"
     declare quota="${2:?Missing quota argument   $(caller 0)}"
     quota=${quota_map[${quota}]}
-    jq --arg plan "${plan}" --arg quota "${quota}" -r '.[].entity|select(.name==$plan)|.[$quota]' "/tmp/lh/${quotas_dataset}"
+    jq --arg plan "${plan}" --arg quota "${quota}" -r '.[].entity|select(.name==$plan)|.[$quota]' "/tmp/lh/${dataset}"
 }
 
 get_test_array_length()
@@ -136,15 +136,20 @@ get_test_quota_list()
     jq --arg i "${idx}" --arg qs "${quota_set}" -r '.[$i|tonumber]|select(.quota_name==$qs)|(keys-["quota_name"])|.[]' ${validation_data}
 }
 
-
-
-fab_test()
+lh_test()
 {
     declare -i i tests
     declare name quota plan
 
     tests=$(get_test_array_length)
-    get_org_quota_plans
+    if ! get_org_quota_plans
+    then
+        active "Quota Plans Testing "
+        not_ok $(query_get_error "/tmp/lh/${dataset}")
+        lh_result="false"
+        return 0
+    fi
+
     [[ $(has_any_quota_plans) != "true" ]] && {
         active "Quota Plans Testing "
         not_ok "No quota plans found"
@@ -197,24 +202,34 @@ fab_test()
                     info "${negate}(${quota_value} ${operation[0]} ${operation[1]})"
                 else
                     not_ok "${negate}(${quota_value} ${operation[0]} ${operation[1]})"
+                    lh_result="false"
                 fi
             fi
-                #*)
-                    #echo unknown quota "${quota}"
-                    #;;
         done
     done
     return 0
 }
 
-if [[ $(fab_validate_data) == "true" ]]
+if [[ $(lh_validate_data) == "true" ]]
 then
-    fab_test
+    lh_test
 else
     active "Perform quota tests"
-    not_ok  $(fab_validate_description)
+    not_ok  $(lh_validate_description)
     lh_result="false"
 fi
 
-rm -f /tmp/lh/${quotas_dataset}
+unset -f lh_validate_data
+unset -f lh_validate_description
+unset -f get_org_quota_plans
+unset -f has_any_quota_plans
+unset -f does_quota_plan_exist
+unset -f get_quota_value
+unset -f get_test_array_length
+unset -f get_test_quota_name
+unset -f get_test_quota
+unset -f get_test_quota_list
+unset -f lh_test
+
+rm -f /tmp/lh/${dataset}
 [[ "${lh_result}" == "true" ]]
