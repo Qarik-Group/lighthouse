@@ -4,7 +4,18 @@ STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
 
 # read in configuration variables, when the file exits
 # it will not exist in piplines that run containers for example.
-[[ -s "config.env" ]] && source "config.env"
+if [[ ! "" = "$USE_ENV" ]] ;
+  then
+      if [[ -s "config.${USE_ENV}.env" ]]
+       then
+           source "config.${USE_ENV}.env"
+       else
+           echo "USE_ENV set to '${USE_ENV}' but config.${USE_ENV}.env not found"
+       fi
+  else
+    [[ -s "config.env" ]] && source "config.env"
+fi
+
 . lib/output.sh
 
 set-env() {
@@ -288,6 +299,35 @@ run_individual_test() {
     fi
 }
 
+repipe() {
+    pushd .
+	cd templates/ci
+    cat << EOF > settings.yml
+---
+meta:
+  envname: ${BASE_ENV}
+  target:  ${CONCOURSE_TARGET}
+  url:     ${CONCOURSE_URL}
+  bosh:
+    ip: "${BOSH_IP}"
+
+  vault:
+    url:   ${VAULT_ADDR}
+    token: (( vault "secret/pipeline/vault:token" ))
+    path:  (( concat "secret/" meta.envname ))  # Or override as needed
+
+  github:
+    owner:  ${GITHUB_OWNER}
+    repo:   lighthouse
+    branch: master
+    private_key:  (( vault "secret/pipelines/shared/github/genesis-bot:private" ))
+
+EOF
+
+ . repipe
+ popd
+}
+
 #TODO figure out if we want a more complicated setting
 enable_lh_debug() {
     export LH_DEBUG=
@@ -345,6 +385,7 @@ usage() {
     echo "  check  -- check for dependencies or signed in."
     echo "  test   -- run all tests."
     echo "  run    -- run a specific test or set of tests."
+    echo "  repipe -- create pipeline for tests"
     exit 1
 }
 
@@ -511,6 +552,10 @@ case "$1" in
             esac
             shift
         done
+        ;;
+    repipe)
+        shift
+        repipe
         ;;
     *)
         usage
