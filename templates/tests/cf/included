@@ -1,5 +1,5 @@
-tests/cf/apps.sh
-tests/cf/buildpacks.sh
-tests/cf/feature_flags.sh
-tests/cf/orgs.sh
-tests/cf/spaces.sh
+./${USE_ENV}/tests/cf/apps.sh
+./${USE_ENV}/tests/cf/buildpacks.sh
+./${USE_ENV}/tests/cf/feature_flags.sh
+./${USE_ENV}/tests/cf/orgs.sh
+./${USE_ENV}/tests/cf/spaces.sh

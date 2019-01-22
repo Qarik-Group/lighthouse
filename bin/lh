@@ -35,7 +35,7 @@ component_test() {
     STEP "Running ${component} tests."
     ####
     
-    component_path="tests/${component}/included"
+    component_path="${USE_ENV}/tests/${component}/included"
     if valid_test_path "${component_path}" ; then
         . ${component_path}
     fi
@@ -118,7 +118,7 @@ bosh_tests() {
     STEP "Running BOSH tests."
     ####
 
-    . tests/bosh/included
+    . ${USE_ENV}/tests/bosh/included
 
 }
 
@@ -169,7 +169,7 @@ cf_tests() {
     STEP "Running CF tests."
     ####
 
-    . tests/cf/included
+    . ${USE_ENV}/tests/cf/included
 
 }
 
@@ -344,33 +344,33 @@ env_init() {
 # use VAULT_SKIP_VERIFY  = 1 for insecure, non-tls environments.
 # providing the VAULT_TOKEN here allows you to sign into lighthouse without prompts.
 
-export BASE_ENV          = "$LH_ENV_NAME"
-export VAULT_PATH        = "replace-me"
-export VAULT_TOKEN       = "replace-me"
-export VAULT_ADDR        = "replace-me"
-export VAULT_ALIAS       = "replace-me"
-export VAULT_SKIP_VERIFY = 1
-export SAFE_AUTH         = token   #can be token or github
+export BASE_ENV="$LH_ENV_NAME"
+export VAULT_PATH="replace-me"
+export VAULT_TOKEN="replace-me"
+export VAULT_ADDR="replace-me"
+export VAULT_ALIAS="replace-me"
+export VAULT_SKIP_VERIFY=1
+export SAFE_AUTH=token   #can be token or github
 
-export CONCOURSE_TARGET  = "replace-me"
-export CONCOURSE_URL     = "replace-me"
-export GITHUB_OWNER      = starkandwayne   # replace if you are using your own fork
+export CONCOURSE_TARGET="replace-me"
+export CONCOURSE_URL="replace-me"
+export GITHUB_OWNER=starkandwayne   # replace if you are using your own fork
 
 # environment variables for BOSH
 # can be used to override default vault values
 
-export BOSH_IP           = "replace-me"
-export BOSH_ENVIRONMENT  = "replace-me"
+export BOSH_IP="replace-me"
+export BOSH_ENVIRONMENT="replace-me"
 
 # environment variables for Cloud Foundry
 # can be used to override default vault values
 
-# export CF_DIAL_TIMEOUT = 180 # Uncomment if you need for login/usage
-# export CF_USERNAME     = "admin"
-# export CF_PASSWORD     = "replace-me"
-# export CF_API          = "replace-me"
-# export CF_ORG          = "replace-me"
-# export CF_SPACE        = "replace-me"
+# export CF_DIAL_TIMEOUT =180 # Uncomment if you need for login/usage
+# export CF_USERNAME="admin"
+# export CF_PASSWORD="replace-me"
+# export CF_API="replace-me"
+# export CF_ORG="replace-me"
+# export CF_SPACE="replace-me"
 
 EOF
     fi
@@ -378,8 +378,8 @@ EOF
     echo "Copying template files to ${LH_ENV_NAME}/data/ and ${LH_ENV_NAME}/tests/"
     mkdir -p ${LH_ENV_NAME}/data/
     mkdir -p ${LH_ENV_NAME}/tests/
-    cp -Rv ${LH_DIRECTORY}/templates/data ${LH_ENV_NAME}/
-    cp -Rv ${LH_DIRECTORY}/templates/tests ${LH_ENV_NAME}/
+    cp -Riv ${LH_DIRECTORY}/templates/data ${LH_ENV_NAME}/
+    #cp -Riv ${LH_DIRECTORY}/templates/tests ${LH_ENV_NAME}/
     
     exit 0
 }
