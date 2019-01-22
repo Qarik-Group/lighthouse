@@ -9,7 +9,7 @@ lh_result="true"
 this_test_file=$(basename ${0})
 this_test=$(echo ${this_test_file%.*})
 this_path=$(dirname ${0})
-test_defn_path=$(echo "${this_path/tests/rules}")
+test_defn_path=$(echo "${this_path/tests/data}")
 
 # Create Temp Directory
 temp_path='/tmp/lh'

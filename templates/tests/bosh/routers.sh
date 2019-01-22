@@ -4,7 +4,7 @@
 . lib/output.sh
 
 vms_dataset="vms_$$"
-validation_data="rules/bosh/routers.json"
+validation_data="data/bosh/routers.json"
 
 fab_validate_data()
 {
