@@ -3,7 +3,12 @@
 # TODO add test that authorization was done already
 # TODO add trap for cleanup
 
-. lib/output.sh
+if [[ "" == "${LH_DIRECTORY}" ]] ; then
+    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and USE_ENV variables"
+    exit 1
+fi
+
+. ${LH_DIRECTORY}/lib/output.sh
 
 mkdir -p /tmp/lh
 

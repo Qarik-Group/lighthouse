@@ -1,17 +1,37 @@
 #!/usr/bin/env bash
 
-. lib/curl.sh
-. lib/output.sh
+if [[ "" == "${LH_DIRECTORY}" ]] ; then
+    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and USE_ENV variables"
+    exit 1
+fi
 
-test_data="rules/cf/envvars.json"
+. ${LH_DIRECTORY}/lib/curl.sh
+. ${LH_DIRECTORY}/lib/output.sh
+
+base_validation_data="data/cf/envvars.json"
 dataset="environment_variables_$$"
+
+echo "Checking ${LH_DIRECTORY}/templates/${base_validation_data}"
+validation_data="${LH_DIRECTORY}/templates/${base_validation_data}"
+
+if [[ -e "${base_validation_data}" ]] ; 
+then 
+    echo "Found ./${base_validation_data}" 
+    validation_data="${base_validation_data}"
+fi
+
+if [[ "" != "${USE_ENV}" ]] && [[ -e "${USE_ENV}/${base_validation_data}" ]] ;
+then
+    echo "Found and using ${USE_ENV}/${base_validation_data}"
+    validation_data="${USE_ENV}/${base_validation_data}"
+fi
 
 lh_result="true"
 fab_validate_data()
 {
     jq '[type=="object",(keys-["staging","running"]|length==0),
             if has("staging") then (.staging|(type=="object",length)) else true end,
-            if has("running") then (.running|(type=="object",length)) else true end]|all' rules/cf/envvars.json
+            if has("running") then (.running|(type=="object",length)) else true end]|all' data/cf/envvars.json
 }
 
 fab_validate_description()
@@ -27,7 +47,7 @@ get_envvar() {
 
 get_test_envvars() {
     declare envtype="${1:?Missing environment type  argument   $(caller 0)}"
-    jq --arg envtype "${envtype}" -r '.[$envtype]|to_entries[]|[.key,.value|@text]|@tsv' "${test_data}"
+    jq --arg envtype "${envtype}" -r '.[$envtype]|to_entries[]|[.key,.value|@text]|@tsv' "${validation_data}"
 
 }
 

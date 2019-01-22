@@ -1,15 +1,35 @@
 #!/usr/bin/env bash
 
-. lib/curl.sh
-. lib/output.sh
+if [[ "" == "${LH_DIRECTORY}" ]] ; then
+    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and USE_ENV variables"
+    exit 1
+fi
 
-test_data="rules/cf/orgs.json"
+. ${LH_DIRECTORY}/lib/curl.sh
+. ${LH_DIRECTORY}/lib/output.sh
+
+base_validation_data="data/cf/orgs.json"
 dataset="organizations_$$"
+
+echo "Checking ${LH_DIRECTORY}/templates/${base_validation_data}"
+validation_data="${LH_DIRECTORY}/templates/${base_validation_data}"
+
+if [[ -e "${base_validation_data}" ]] ; 
+then 
+    echo "Found ./${base_validation_data}" 
+    validation_data="${base_validation_data}"
+fi
+
+if [[ "" != "${USE_ENV}" ]] && [[ -e "${USE_ENV}/${base_validation_data}" ]] ;
+then
+    echo "Found and using ${USE_ENV}/${base_validation_data}"
+    validation_data="${USE_ENV}/${base_validation_data}"
+fi
 
 lh_result="true"
 fab_validate_data()
 {
-    jq '[.|(type=="array",length > 0),(.[]|(type=="string",length>0))]|all' ${test_data}
+    jq '[.|(type=="array",length > 0),(.[]|(type=="string",length>0))]|all' ${validation_data}
 }
 
 fab_validate_description()
@@ -27,7 +47,7 @@ fab_test() {
     query_cf_api "/v2/organizations" ${dataset}
 
     # TODO add validation
-    for org in $(jq -r '.[]' ${test_data})
+    for org in $(jq -r '.[]' ${validation_data})
     do
         active "Does org ${org} exist?"
         [[ $(org_exists "${org}") == "true" ]] && ok || { 

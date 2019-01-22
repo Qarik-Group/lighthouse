@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+LH_DIRECTORY=$(dirname $(dirname $0))
+echo "LH_DIRECTORY=${LH_DIRECTORY}"
+
 STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
 
 # read in configuration variables, when the file exits
@@ -16,7 +19,7 @@ if [[ ! "" = "$USE_ENV" ]] ;
     [[ -s "config.env" ]] && source "config.env"
 fi
 
-. lib/output.sh
+. ${LH_DIRECTORY}/lib/output.sh
 
 set-env() {
     # take an environment name as a parameter
@@ -301,7 +304,7 @@ run_individual_test() {
 
 repipe() {
     pushd .
-	cd templates/ci
+    cd templates/ci
     cat << EOF > settings.yml
 ---
 meta:
@@ -324,8 +327,61 @@ meta:
 
 EOF
 
- . repipe
+ . ${LH_DIRECTORY}/templates/ci/repipe
  popd
+}
+
+env_init() {
+    LH_ENV_NAME=$1
+    
+    if [[ -e "config.${LH_ENV_NAME}.env" ]]
+    then
+        echo "File config.${LH_ENV_NAME}.env already exists"
+    else
+        echo "Adding Environment '${LH_ENV_NAME}'"
+        cat << EOF > config.${LH_ENV_NAME}.env
+# the root path in vault to the secrets stored in vault.
+# use VAULT_SKIP_VERIFY  = 1 for insecure, non-tls environments.
+# providing the VAULT_TOKEN here allows you to sign into lighthouse without prompts.
+
+export BASE_ENV          = "$LH_ENV_NAME"
+export VAULT_PATH        = "replace-me"
+export VAULT_TOKEN       = "replace-me"
+export VAULT_ADDR        = "replace-me"
+export VAULT_ALIAS       = "replace-me"
+export VAULT_SKIP_VERIFY = 1
+export SAFE_AUTH         = token   #can be token or github
+
+export CONCOURSE_TARGET  = "replace-me"
+export CONCOURSE_URL     = "replace-me"
+export GITHUB_OWNER      = starkandwayne   # replace if you are using your own fork
+
+# environment variables for BOSH
+# can be used to override default vault values
+
+export BOSH_IP           = "replace-me"
+export BOSH_ENVIRONMENT  = "replace-me"
+
+# environment variables for Cloud Foundry
+# can be used to override default vault values
+
+# export CF_DIAL_TIMEOUT = 180 # Uncomment if you need for login/usage
+# export CF_USERNAME     = "admin"
+# export CF_PASSWORD     = "replace-me"
+# export CF_API          = "replace-me"
+# export CF_ORG          = "replace-me"
+# export CF_SPACE        = "replace-me"
+
+EOF
+    fi
+
+    echo "Copying template files to ${LH_ENV_NAME}/data/ and ${LH_ENV_NAME}/tests/"
+    mkdir -p ${LH_ENV_NAME}/data/
+    mkdir -p ${LH_ENV_NAME}/tests/
+    cp -Rv ${LH_DIRECTORY}/templates/data ${LH_ENV_NAME}/
+    cp -Rv ${LH_DIRECTORY}/templates/tests ${LH_ENV_NAME}/
+    
+    exit 0
 }
 
 #TODO figure out if we want a more complicated setting
@@ -378,6 +434,12 @@ run_usage() {
     exit 1
 }
 
+init_usage() {
+    echo "Usage: ${0} environment"
+    echo "  Create a config.environment.env and copy over the data files to the local directory"
+    exit 1
+}
+
 usage() {
     echo "Lighthouse, near friendly shores."
     echo "  login  -- sign into vault with safe, then BOSH and CF with vault."
@@ -386,6 +448,8 @@ usage() {
     echo "  test   -- run all tests."
     echo "  run    -- run a specific test or set of tests."
     echo "  repipe -- create pipeline for tests"
+    echo "  init   -- Create config for new lighthouse environment"
+    echo "  import -- Collect information for non-Genesis environments"
     exit 1
 }
 
@@ -552,6 +616,15 @@ case "$1" in
             esac
             shift
         done
+        ;;
+    import)
+        shift
+        env_import
+        ;;
+    init)
+        shift
+        if [[ $# -lt 1 ]] ; then init_usage ; fi 
+        env_init $1
         ;;
     repipe)
         shift

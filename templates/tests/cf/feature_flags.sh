@@ -1,14 +1,30 @@
 #!/usr/bin/env bash
 
-# TODO add test that authorization was done already
-# TODO add trap for cleanup
+if [[ "" == "${LH_DIRECTORY}" ]] ; then
+    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and USE_ENV variables"
+    exit 1
+fi
 
-. lib/output.sh
+. ${LH_DIRECTORY}/lib/output.sh
 
 dataset="/tmp/lh/feature_flags.$$"
-validation_data="rules/cf/feature_flags.json"
+base_validation_data="data/cf/feature_flags.json"
 lh_result="true"
 
+echo "Checking ${LH_DIRECTORY}/templates/${base_validation_data}"
+validation_data="${LH_DIRECTORY}/templates/${base_validation_data}"
+
+if [[ -e "${base_validation_data}" ]] ; 
+then 
+    echo "Found ./${base_validation_data}" 
+    validation_data="${base_validation_data}"
+fi
+
+if [[ "" != "${USE_ENV}" ]] && [[ -e "${USE_ENV}/${base_validation_data}" ]] ;
+then
+    echo "Found and using ${USE_ENV}/${base_validation_data}"
+    validation_data="${USE_ENV}/${base_validation_data}"
+fi
 fab_validate_data()
 {
     jq '[(type == "object"),(keys|length > 0),(keys - ["disabled","enabled"]|length == 0),

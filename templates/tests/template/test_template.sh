@@ -1,15 +1,37 @@
 #!/usr/bin/env bash
 
-. lib/curl.sh
-. lib/output.sh
+if [[ "" == "${LH_DIRECTORY}" ]] ; then
+    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and USE_ENV variables"
+    exit 1
+fi
+
+. ${LH_DIRECTORY}/lib/curl.sh
+. ${LH_DIRECTORY}/lib/output.sh
+
+base_validation_data="data/cf/data_name.json"
+
+echo "Checking ${LH_DIRECTORY}/templates/${base_validation_data}"
+validation_data="${LH_DIRECTORY}/templates/${base_validation_data}"
+
+if [[ -e "${base_validation_data}" ]] ; 
+then 
+    echo "Found ./${base_validation_data}" 
+    validation_data="${base_validation_data}"
+fi
+
+if [[ "" != "${USE_ENV}" ]] && [[ -e "${USE_ENV}/${base_validation_data}" ]] ;
+then
+    echo "Found and using ${USE_ENV}/${base_validation_data}"
+    validation_data="${USE_ENV}/${base_validation_data}"
+fi
 
 lh_result="true"
 
-# Dynamically set the rules file and dataset temporary file based on the name and path of this file
+# Dynamically set the data file and dataset temporary file based on the name and path of this file
 this_test_file=$(basename ${0})
 this_test=$(echo ${this_test_file%.*})
 this_path=$(dirname ${0})
-test_defn_path=$(echo "${this_path/tests/rules}")
+test_defn_path=$(echo "${this_path/tests/data}")
 
 # Create Temp Directory
 temp_path='/tmp/lh'
