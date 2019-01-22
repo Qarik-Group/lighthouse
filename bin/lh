@@ -41,6 +41,21 @@ component_test() {
     fi
 }
 
+find_test_path() {
+    test_path=$1
+    if [[ -x "${USE_ENV}/${test_path}" ]]; then
+        echo "${USE_ENV}/${test_path}"
+    elif [[ -x "${test_path}" ]]; then
+        echo "${test_path}"
+    elif [[ -x "template/${test_path}" ]]; then
+        echo "template/${test_path}"
+    else
+        not_ok "Test '${test_path}' does not exist; skipping."
+        return 1
+    fi
+    return 0
+}
+
 valid_test_path() {
     test_path=$1
     if [ ! -f "${test_path}" ]; then
