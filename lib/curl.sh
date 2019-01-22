@@ -4,7 +4,19 @@ query_get_error()
 {
     declare dataset="${1:?Missing dataset file   $(caller 0)}"
      
-    jq -c -r '"cf query failure: " + .description' "${dataset}"
+    exec 3< "${dataset}"
+    read line <&3
+    if [[ "${line}" == '{' ]]
+    then
+        jq -c -r '"cf query failure: " + .description' "${dataset}"
+    elif [[ "${line}" == "FAILED" ]]
+    then
+        read line <&3;
+        echo "${line}"
+    else
+        echo "${line}"
+    fi
+    exec 3<&-
 }
 
 query_get_error_codes()
@@ -43,13 +55,13 @@ query_cf_api()
         then
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
-            return 1  # cf detected an error
+            return 2  # cf detected an error
         elif [[ $(query_has_error "${dataset}") == "true" ]]
         then
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
             return 1  # cf detected an error
-        elif [[ $(has_multi_result_packet "${dataset}") == "false" ]]
+        elif [[ $(has_multi_result_packet "${dataset}") != "true" ]]
         then
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
