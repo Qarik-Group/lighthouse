@@ -46,7 +46,7 @@ find_included_path() {
     elif [[ -f "templates/tests/${test_path}" ]]; then
         echo "templates/tests/${test_path}"
     else
-        not_ok "Test '${test_path}' does not exist; skipping."
+        warn "Test '${test_path}' does not exist; skipping."
         return 1
     fi
     return 0
@@ -61,7 +61,7 @@ find_test_path() {
     elif [[ -x "templates/tests/${test_path}" ]]; then
         echo "templates/tests/${test_path}"
     else
-        not_ok "Test '${test_path}' does not exist or executable; skipping."
+        warn "Test '${test_path}' does not exist or executable; skipping."
         return 1
     fi
     return 0
@@ -78,7 +78,7 @@ component_test() {
     
     declare included_path=$(find_included_path ${component}/included)
     if [[ $? -ne 0 ]]; then
-        echo ${included_path}
+        warn "${included_path}"
         return 1
     fi
 
@@ -89,9 +89,10 @@ component_test() {
         test_file=$(basename "${testcase}")
         test_path=$(find_test_path "${component}/${test_file}")
         if [[ $? -eq 0 ]]; then
-            echo Executing ${test_path}
+            STEP "Executing ${test_path}"
             . ${test_path}
         else
+            STEP "Executing ${component}/${test_file}"
             echo ${test_path}
         fi
     done <"${included_path}"
