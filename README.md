@@ -21,18 +21,93 @@ With lighthouse, you can run a quick series of tests to make sure things will be
 2. Clone this repo to your local computer.
 
 ```bash
-git clone https://github.com/krutten/lighthouse.git
+git clone https://github.com/starkandwayne/lighthouse.git
 ```
 
-### Configure
+### Installation
 
-3. Make a copy of the `config.env.example` file.
+Method A) Add the bin directory to your path
 
 ```bash
-$ cp config.env.example config.env
+$ export PATH=~/path/to/lighthouse/bin:$PATH
 ```
 
-4. Provide the required settings to the Vault backend by replacing all the `"replace-me"` values.
+Method B) Put the `lh` script in your path and set the `LH_DIRECTORY` variable to point to the folder with the templates
+
+```bash
+$ export LH_DIRECTORY=~/path/to/lighthouse
+```
+### Configure
+
+3. Run the lighthouse init command to create a new directory/repo for your configuration
+
+```bash
+$ lh init dirname
+Creating directory dirname
+/Users/krutten/src/templates/data -> dirname/data
+/Users/krutten/src/templates/data/uaa -> dirname/data/uaa
+/Users/krutten/src/templates/data/uaa/local_users.json -> dirname/data/uaa/local_users.json
+/Users/krutten/src/templates/data/cf -> dirname/data/cf
+/Users/krutten/src/templates/data/cf/buildpacks.json -> dirname/data/cf/buildpacks.json
+/Users/krutten/src/templates/data/cf/feature_flags.json -> dirname/data/cf/feature_flags.json
+/Users/krutten/src/templates/data/cf/spaces.json -> dirname/data/cf/spaces.json
+/Users/krutten/src/templates/data/cf/services.json -> dirname/data/cf/services.json
+/Users/krutten/src/templates/data/cf/quotas.json -> dirname/data/cf/quotas.json
+/Users/krutten/src/templates/data/cf/orgs.json -> dirname/data/cf/orgs.json
+/Users/krutten/src/templates/data/cf/envvars.json -> dirname/data/cf/envvars.json
+/Users/krutten/src/templates/data/cf/apps.json -> dirname/data/cf/apps.json
+/Users/krutten/src/templates/data/bosh -> dirname/data/bosh
+/Users/krutten/src/templates/data/bosh/routers.json -> dirname/data/bosh/routers.json
+/Users/krutten/src/templates/tests -> dirname/tests
+/Users/krutten/src/templates/tests/uaa -> dirname/tests/uaa
+/Users/krutten/src/templates/tests/uaa/local_users.sh -> dirname/tests/uaa/local_users.sh
+/Users/krutten/src/templates/tests/uaa/included -> dirname/tests/uaa/included
+/Users/krutten/src/templates/tests/cf -> dirname/tests/cf
+/Users/krutten/src/templates/tests/cf/quotas.sh -> dirname/tests/cf/quotas.sh
+/Users/krutten/src/templates/tests/cf/services.sh -> dirname/tests/cf/services.sh
+/Users/krutten/src/templates/tests/cf/buildpacks.sh -> dirname/tests/cf/buildpacks.sh
+/Users/krutten/src/templates/tests/cf/orgs.sh -> dirname/tests/cf/orgs.sh
+/Users/krutten/src/templates/tests/cf/spaces.sh -> dirname/tests/cf/spaces.sh
+/Users/krutten/src/templates/tests/cf/apps.sh -> dirname/tests/cf/apps.sh
+/Users/krutten/src/templates/tests/cf/included -> dirname/tests/cf/included
+/Users/krutten/src/templates/tests/cf/envvars.sh -> dirname/tests/cf/envvars.sh
+/Users/krutten/src/templates/tests/cf/feature_flags.sh -> dirname/tests/cf/feature_flags.sh
+/Users/krutten/src/templates/tests/template -> dirname/tests/template
+/Users/krutten/src/templates/tests/template/test_template.sh -> dirname/tests/template/test_template.sh
+/Users/krutten/src/templates/tests/bosh -> dirname/tests/bosh
+/Users/krutten/src/templates/tests/bosh/routers.sh -> dirname/tests/bosh/routers.sh
+/Users/krutten/src/templates/tests/bosh/included -> dirname/tests/bosh/included
+$ cd dirname
+```
+
+4. Run lighthouse new for each environment to use
+
+```bash
+$ lh new aws-prod
+Adding Environment 'aws-prod'
+Copying template files to aws-prod/data/ and aws-prod/tests/
+/Users/krutten/src/lighthouse/templates/data -> aws-prod/data
+/Users/krutten/src/lighthouse/templates/data/uaa -> aws-prod/data/uaa
+/Users/krutten/src/lighthouse/templates/data/uaa/local_users.json -> aws-prod/data/uaa/local_users.json
+/Users/krutten/src/lighthouse/templates/data/cf -> aws-prod/data/cf
+/Users/krutten/src/lighthouse/templates/data/cf/buildpacks.json -> aws-prod/data/cf/buildpacks.json
+/Users/krutten/src/lighthouse/templates/data/cf/feature_flags.json -> aws-prod/data/cf/feature_flags.json
+/Users/krutten/src/lighthouse/templates/data/cf/spaces.json -> aws-prod/data/cf/spaces.json
+/Users/krutten/src/lighthouse/templates/data/cf/services.json -> aws-prod/data/cf/services.json
+/Users/krutten/src/lighthouse/templates/data/cf/quotas.json -> aws-prod/data/cf/quotas.json
+/Users/krutten/src/lighthouse/templates/data/cf/orgs.json -> aws-prod/data/cf/orgs.json
+/Users/krutten/src/lighthouse/templates/data/cf/envvars.json -> aws-prod/data/cf/envvars.json
+/Users/krutten/src/lighthouse/templates/data/cf/apps.json -> aws-prod/data/cf/apps.json
+/Users/krutten/src/lighthouse/templates/data/bosh -> aws-prod/data/bosh
+/Users/krutten/src/lighthouse/templates/data/bosh/routers.json -> aws-prod/data/bosh/routers.json
+```
+When tests run, they will first look in the ./ENV/tests for the tests and then ./tests and then the lighthouse templates.
+
+The tests themselves will look in ./ENV/data then ./data and finally the templates/data for the data file to use.
+
+This allows you to customize your tests in general and for each environmant as needed.
+
+5. Provide the required settings to the Vault backend by replacing all the `"replace-me"` values.
 
 ```bash
 export VAULT_PATH="replace-me"

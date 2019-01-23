@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
-
-LH_DIRECTORY=$(dirname $(dirname $0))
-echo "LH_DIRECTORY=${LH_DIRECTORY}"
+set -x
+if [[ "" = "${LH_DIRECTORY}" ]]
+then
+    LH_DIRECTORY=$(dirname $(dirname $0))
+    #echo "LH_DIRECTORY=${LH_DIRECTORY}"
+else
+    if [[ ! -r "${LH_DIRECTORY}/lib/output.sh" ]]
+    then
+        echo "LH_DIRECTORY does not point to the lighthouse directory"
+        exit 1
+    fi
+fi
 
 STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
 
@@ -331,7 +340,16 @@ EOF
  popd
 }
 
-env_init() {
+do_init() {
+    new_directory=$1
+    echo "Creating directory ${new_directory}"
+    mkdir ${new_directory}
+    cp -Riv ${LH_DIRECTORY}/templates/data ${new_directory}/
+    cp -Riv ${LH_DIRECTORY}/templates/tests ${new_directory}/
+    exit 0
+}
+
+new_env() {
     LH_ENV_NAME=$1
     
     if [[ -e "config.${LH_ENV_NAME}.env" ]]
@@ -434,9 +452,14 @@ run_usage() {
     exit 1
 }
 
+new_usage() {
+    echo "Usage: ${0} new environment"
+    echo "  Create a config.environment.env and copy over the data files to the environment subdirectory"
+    exit 1
+}
 init_usage() {
-    echo "Usage: ${0} environment"
-    echo "  Create a config.environment.env and copy over the data files to the local directory"
+    echo "Usage: ${0} init"
+    echo "  Create a directory and copy over the data files to the default"
     exit 1
 }
 
@@ -448,7 +471,8 @@ usage() {
     echo "  test   -- run all tests."
     echo "  run    -- run a specific test or set of tests."
     echo "  repipe -- create pipeline for tests"
-    echo "  init   -- Create config for new lighthouse environment"
+    echo "  init   -- Create config directory for addding lighthouse environment"
+    echo "  new    -- Create config for lighthouse environment after init"
     echo "  import -- Collect information for non-Genesis environments"
     exit 1
 }
@@ -621,10 +645,15 @@ case "$1" in
         shift
         env_import
         ;;
+    new)
+        shift
+        if [[ $# -lt 1 ]] ; then new_usage ; fi
+        new_env $1
+        ;;
     init)
         shift
-        if [[ $# -lt 1 ]] ; then init_usage ; fi 
-        env_init $1
+        if [[ $# -lt 1 ]] ; then init_usage ; fi
+        do_init $1
         ;;
     repipe)
         shift
