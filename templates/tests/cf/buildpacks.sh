@@ -38,8 +38,8 @@ fab_test()
         return 0
     fi
     declare prev_stack="asdfgh"
-    jq -r '[.resources[].entity]|sort_by(.stack,.position)[]|[.stack//"",.position,.name]|@sh' ${dataset} | 
-    while read stack position name 
+    jq -r '[.resources[].entity]|sort_by(.stack,.position)[]|[.stack//" ",.position,.name]|@tsv' ${dataset} | 
+    while IFS=$'\t' read stack position name 
     do
         if [[ "${prev_stack}" !=  ${stack} ]]
         then
