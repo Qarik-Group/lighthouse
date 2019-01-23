@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -x
+
 if [[ "" = "${LH_DIRECTORY}" ]]
 then
     LH_DIRECTORY=$(dirname $(dirname $0))
@@ -37,32 +37,63 @@ set-env() {
     echo "love is ${2}"
 }
 
-component_test() {
-    component=$1
-    
-    ####
-    STEP "Running ${component} tests."
-    ####
-    
-    component_path="${USE_ENV}/tests/${component}/included"
-    if valid_test_path "${component_path}" ; then
-        . ${component_path}
-    fi
-}
-
-find_test_path() {
+find_included_path() {
     test_path=$1
-    if [[ -x "${USE_ENV}/${test_path}" ]]; then
-        echo "${USE_ENV}/${test_path}"
-    elif [[ -x "${test_path}" ]]; then
-        echo "${test_path}"
-    elif [[ -x "template/${test_path}" ]]; then
-        echo "template/${test_path}"
+    if [[ -f "${USE_ENV}/tests/${test_path}" ]]; then
+        echo "${USE_ENV}/tests/${test_path}"
+    elif [[ -f "tests/${test_path}" ]]; then
+        echo "tests/${test_path}"
+    elif [[ -f "templates/tests/${test_path}" ]]; then
+        echo "templates/tests/${test_path}"
     else
         not_ok "Test '${test_path}' does not exist; skipping."
         return 1
     fi
     return 0
+}
+
+find_test_path() {
+    test_path=$1
+    if [[ -x "${USE_ENV}/tests/${test_path}" ]]; then
+        echo "${USE_ENV}/tests/${test_path}"
+    elif [[ -x "tests/${test_path}" ]]; then
+        echo "tests/${test_path}"
+    elif [[ -x "templates/tests/${test_path}" ]]; then
+        echo "templates/tests/${test_path}"
+    else
+        not_ok "Test '${test_path}' does not exist or executable; skipping."
+        return 1
+    fi
+    return 0
+}
+
+component_test() {
+    declare component="${1:?Missing quota plan argument   $(caller 0)}"
+
+    ####
+    STEP "Running ${component} tests."
+    ####
+
+    declare testcase test_file test_path 
+    
+    declare included_path=$(find_included_path ${component}/included)
+    echo Using included path  ${included_path}
+    
+
+    while read testcase
+    do
+        test_file=$(basename "${testcase}")
+        test_path=$(find_test_path "${component}/${test_file}")
+        if [[ $? -eq 0 ]]; then
+            echo Executing ${test_path}
+            . ${test_path}
+        fi
+    done <"${included_path}"
+
+
+    # if valid_test_path "${component_path}" ; then
+        # . ${component_path}
+    # fi
 }
 
 valid_test_path() {
