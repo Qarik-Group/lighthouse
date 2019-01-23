@@ -77,9 +77,13 @@ component_test() {
     declare testcase test_file test_path 
     
     declare included_path=$(find_included_path ${component}/included)
+    if [[ $? -ne 0 ]]; then
+        echo ${included_path}
+        return 1
+    fi
+
     echo Using included path  ${included_path}
     
-
     while read testcase
     do
         test_file=$(basename "${testcase}")
@@ -87,13 +91,11 @@ component_test() {
         if [[ $? -eq 0 ]]; then
             echo Executing ${test_path}
             . ${test_path}
+        else
+            echo ${test_path}
         fi
     done <"${included_path}"
-
-
-    # if valid_test_path "${component_path}" ; then
-        # . ${component_path}
-    # fi
+    return 0
 }
 
 valid_test_path() {
