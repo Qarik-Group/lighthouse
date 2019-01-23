@@ -31,7 +31,7 @@ fab_validate_data()
 {
     jq '[type=="object",(keys-["staging","running"]|length==0),
             if has("staging") then (.staging|(type=="object",length)) else true end,
-            if has("running") then (.running|(type=="object",length)) else true end]|all' data/cf/envvars.json
+            if has("running") then (.running|(type=="object",length)) else true end]|all' "${validation_data}"
 }
 
 fab_validate_description()
