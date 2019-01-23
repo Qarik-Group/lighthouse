@@ -98,16 +98,6 @@ component_test() {
     return 0
 }
 
-valid_test_path() {
-    test_path=$1
-    if [ ! -f "${test_path}" ]; then
-        not_ok "Test '${test_path}' does not exist; skipping."
-        return 1
-    else
-        return 0
-    fi
-}
-
 help_arg_passed() {
     inputs=("$@")
     for i in "${inputs[@]}"; do
@@ -353,9 +343,14 @@ logout() {
 }
 
 run_individual_test() {
+    declare test_file="${1:?Missing quota plan argument   $(caller 0)}"
     [[ "${skip_login}" -ne 0 ]] && login
-    if valid_test_path $1 ; then
-      . $1
+    declare test_path=$(find_test_path "${test_file}")
+    if [[ $? -eq 0 ]]; then
+        echo Executing ${test_path}
+        . ${test_path}
+    else
+        echo ${test_path}
     fi
 }
 
