@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -x
+
 if [[ "" = "${LH_DIRECTORY}" ]]
 then
     LH_DIRECTORY=$(dirname $(dirname $0))
@@ -37,27 +37,66 @@ set-env() {
     echo "love is ${2}"
 }
 
+find_included_path() {
+    test_path=$1
+    if [[ -f "${USE_ENV}/tests/${test_path}" ]]; then
+        echo "${USE_ENV}/tests/${test_path}"
+    elif [[ -f "tests/${test_path}" ]]; then
+        echo "tests/${test_path}"
+    elif [[ -f "templates/tests/${test_path}" ]]; then
+        echo "templates/tests/${test_path}"
+    else
+        warn "Test '${test_path}' does not exist; skipping."
+        return 1
+    fi
+    return 0
+}
+
+find_test_path() {
+    test_path=$1
+    if [[ -x "${USE_ENV}/tests/${test_path}" ]]; then
+        echo "${USE_ENV}/tests/${test_path}"
+    elif [[ -x "tests/${test_path}" ]]; then
+        echo "tests/${test_path}"
+    elif [[ -x "templates/tests/${test_path}" ]]; then
+        echo "templates/tests/${test_path}"
+    else
+        warn "Test '${test_path}' does not exist or is not an executable; skipping."
+        return 1
+    fi
+    return 0
+}
+
 component_test() {
-    component=$1
-    
+    declare component="${1:?Missing quota plan argument   $(caller 0)}"
+
     ####
     STEP "Running ${component} tests."
     ####
-    
-    component_path="${USE_ENV}/tests/${component}/included"
-    if valid_test_path "${component_path}" ; then
-        . ${component_path}
-    fi
-}
 
-valid_test_path() {
-    test_path=$1
-    if [ ! -f "${test_path}" ]; then
-        not_ok "Test '${test_path}' does not exist; skipping."
+    declare testcase test_file test_path 
+    
+    declare included_path=$(find_included_path ${component}/included)
+    if [[ $? -ne 0 ]]; then
+        warn "${included_path}"
         return 1
-    else
-        return 0
     fi
+
+    echo Using included path  ${included_path}
+    
+    while read testcase
+    do
+        test_file=$(basename "${testcase}")
+        test_path=$(find_test_path "${component}/${test_file}")
+        if [[ $? -eq 0 ]]; then
+            STEP "Executing ${test_path}"
+            . ${test_path}
+        else
+            STEP "Executing ${component}/${test_file}"
+            echo ${test_path}
+        fi
+    done <"${included_path}"
+    return 0
 }
 
 help_arg_passed() {
@@ -305,9 +344,16 @@ logout() {
 }
 
 run_individual_test() {
+    declare test_file test_path
+    test_file="${1:?Missing quota plan argument   $(caller 0)}"
     [[ "${skip_login}" -ne 0 ]] && login
-    if valid_test_path $1 ; then
-      . $1
+    test_path=$(find_test_path "${test_file}")
+    if [[ $? -eq 0 ]]; then
+        STEP "Executing ${test_path}"
+        . ${test_path}
+    else
+        STEP "Executing ${test_file}"
+        echo ${test_path}
     fi
 }
 
