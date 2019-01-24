@@ -74,7 +74,7 @@ component_test() {
     STEP "Running ${component} tests."
     ####
 
-    declare testcase test_file test_path 
+    declare testcase test_file test_path
     
     declare included_path=$(find_included_path ${component}/included)
     if [[ $? -ne 0 ]]; then
@@ -237,11 +237,11 @@ check_safe() {
 # loop through the list of required CLI software.
 
 check_dependencies() {
-    
+
     ####
     STEP "Checking software dependencies."
     ####
-        
+
     for command in "jq" "cf" "bosh" "safe" "make" "uaa"; do
         type ${command} > /dev/null
         if [[ $? > 0 ]]; then
@@ -251,22 +251,34 @@ check_dependencies() {
 }
 
 safe_login() {
+    if [[ "SKIP" == "$VAULT_TOKEN" ]]
+    then
+        if check_safe
+        then
+            echo "Skipping Vault login"
+        else
+            echo "Please login to safe or set the VAULT_TOKEN"
+            exit 1
+        fi
+    else
+        ####
+        STEP "Logging into safe."
+        ####
 
-    ####
-    STEP "Logging into safe."
-    ####
-
-    safe -k target ${VAULT_ADDR} ${VAULT_ALIAS}
-    echo "$VAULT_TOKEN" | safe auth ${SAFE_AUTH}
+        safe -k target ${VAULT_ADDR} ${VAULT_ALIAS}
+        echo "$VAULT_TOKEN" | safe auth ${SAFE_AUTH}
+    fi
 }
 
 safe_logout() {
+    if [[ "SKIP" != "$VAULT_TOKEN" ]]
+    then
+        ####
+        STEP "Logged out of safe."
+        ####
 
-    ####
-    STEP "Logged out of safe."
-    ####
-
-    safe target delete ${VAULT_ALIAS}
+        safe target delete ${VAULT_ALIAS}
+    fi
 }
 
 uaa_login() {
@@ -409,12 +421,12 @@ new_env() {
 # providing the VAULT_TOKEN here allows you to sign into lighthouse without prompts.
 
 export BASE_ENV="$LH_ENV_NAME"
+export VAULT_TOKEN="replace-me"     # Set to "SKIP" to skip auto-login
 export VAULT_PATH="replace-me"
-export VAULT_TOKEN="replace-me"
 export VAULT_ADDR="replace-me"
 export VAULT_ALIAS="replace-me"
 export VAULT_SKIP_VERIFY=1
-export SAFE_AUTH=token   #can be token or github
+export SAFE_AUTH=token              # can be token or github
 
 export CONCOURSE_TARGET="replace-me"
 export CONCOURSE_URL="replace-me"
@@ -496,6 +508,7 @@ test_usage() {
 run_usage() {
     echo "Usage: ${0} [options] path1 [path2] [path3] ... [pathN]"
     echo "  Takes one or more paths to test scripts and runs them if possible."
+    echo "  The path will be 'group/test.sh' such as 'cf/orgs.sh'"
     echo "  Will login to each component unless instructed otherwise."
     echo "  Options:"
     echo "    -s: skip login to bosh, cf, and uaa."

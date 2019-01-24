@@ -1,7 +1,30 @@
 #!/usr/bin/env bash
+if [[ "" == "${LH_DIRECTORY}" ]] ; then
+    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and USE_ENV variables"
+    exit 1
+fi
 
-. lib/curl.sh
-. lib/output.sh
+. ${LH_DIRECTORY}/lib/curl.sh
+. ${LH_DIRECTORY}/lib/output.sh
+
+vms_dataset="vms_$$"
+base_validation_data="data/uaa/local_users.json"
+
+echo "Checking ${LH_DIRECTORY}/templates/${base_validation_data}"
+validation_data="${LH_DIRECTORY}/templates/${base_validation_data}"
+
+if [[ -e "${base_validation_data}" ]] ;
+then
+    echo "Found ./${base_validation_data}"
+    validation_data="${base_validation_data}"
+fi
+
+if [[ "" != "${USE_ENV}" ]] && [[ -e "${USE_ENV}/${base_validation_data}" ]] ;
+then
+    echo "Found and using ${USE_ENV}/${base_validation_data}"
+    validation_data="${USE_ENV}/${base_validation_data}"
+fi
+
 
 lh_result="true"
 
