@@ -391,7 +391,7 @@ do_init() {
     echo "Creating directory ${new_directory}"
     mkdir ${new_directory}
     cp -Riv ${LH_DIRECTORY}/templates/data ${new_directory}/
-    cp -Riv ${LH_DIRECTORY}/templates/tests ${new_directory}/
+#    cp -Riv ${LH_DIRECTORY}/templates/tests ${new_directory}/
     exit 0
 }
 
@@ -440,9 +440,13 @@ EOF
     fi
 
     echo "Copying template files to ${LH_ENV_NAME}/data/ and ${LH_ENV_NAME}/tests/"
-    mkdir -p ${LH_ENV_NAME}/data/
-    mkdir -p ${LH_ENV_NAME}/tests/
-    cp -Riv ${LH_DIRECTORY}/templates/data ${LH_ENV_NAME}/
+    mkdir -p ${LH_ENV_NAME}/data/cf
+    mkdir -p ${LH_ENV_NAME}/data/bosh
+    mkdir -p ${LH_ENV_NAME}/data/uaa
+    mkdir -p ${LH_ENV_NAME}/tests/cf
+    mkdir -p ${LH_ENV_NAME}/tests/bosh
+    mkdir -p ${LH_ENV_NAME}/tests/uaa
+    #cp -Riv ${LH_DIRECTORY}/templates/data ${LH_ENV_NAME}/
     #cp -Riv ${LH_DIRECTORY}/templates/tests ${LH_ENV_NAME}/
     
     exit 0
