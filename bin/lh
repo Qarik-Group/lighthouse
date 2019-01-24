@@ -43,8 +43,8 @@ find_included_path() {
         echo "${USE_ENV}/tests/${test_path}"
     elif [[ -f "tests/${test_path}" ]]; then
         echo "tests/${test_path}"
-    elif [[ -f "templates/tests/${test_path}" ]]; then
-        echo "templates/tests/${test_path}"
+    elif [[ -f "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
+        echo "${LH_DIRECTORY}/templates/tests/${test_path}"
     else
         warn "Test '${test_path}' does not exist; skipping."
         return 1
@@ -58,8 +58,8 @@ find_test_path() {
         echo "${USE_ENV}/tests/${test_path}"
     elif [[ -x "tests/${test_path}" ]]; then
         echo "tests/${test_path}"
-    elif [[ -x "templates/tests/${test_path}" ]]; then
-        echo "templates/tests/${test_path}"
+    elif [[ -x "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
+        echo "${LH_DIRECTORY}/templates/tests/${test_path}"
     else
         warn "Test '${test_path}' does not exist or is not an executable; skipping."
         return 1
