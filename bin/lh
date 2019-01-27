@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-if [[ "" = "${LH_DIRECTORY}" ]]
+if [[ -z ${LH_DIRECTORY:+is_set_and_not_empty}  ]]
 then
-    LH_DIRECTORY=$(dirname $(dirname $0))
-    #echo "LH_DIRECTORY=${LH_DIRECTORY}"
-else
-    if [[ ! -r "${LH_DIRECTORY}/lib/output.sh" ]]
-    then
-        echo "LH_DIRECTORY does not point to the lighthouse directory"
-        exit 1
-    fi
+    LH_DIRECTORY=$(dirname $(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd))
+    echo "LH_DIRECTORY=${LH_DIRECTORY}"
+fi
+
+if [[ ! -r "${LH_DIRECTORY}/lib/output.sh" ]]
+then
+    echo "LH_DIRECTORY does not point to the lighthouse directory"
+    exit 1
 fi
 
 STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
