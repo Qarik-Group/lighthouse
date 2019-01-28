@@ -28,7 +28,11 @@ if [[ ! "" = "$USE_ENV" ]] ;
     [[ -s "config.env" ]] && source "config.env"
 fi
 
-. ${LH_DIRECTORY}/lib/output.sh
+[[ ":$PATH:" != *":${LH_DIRECTORY}/lib:"* ]] && {
+    PATH="${LH_DIRECTORY}/lib:${PATH}"
+}
+
+. output.sh
 
 set-env() {
     # take an environment name as a parameter
