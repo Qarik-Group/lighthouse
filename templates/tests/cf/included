@@ -3,3 +3,5 @@
 ./${USE_ENV}/tests/cf/feature_flags.sh
 ./${USE_ENV}/tests/cf/orgs.sh
 ./${USE_ENV}/tests/cf/spaces.sh
+cf/doesnotexist.sh
+cf/quotas.sh

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#lh_test_requires cf
+
 # TODO add test that authorization was done already
 # TODO add trap for cleanup
 
