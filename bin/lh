@@ -664,6 +664,7 @@ case "$1" in
                 shift
             done
         fi
+        logout
         ;;
     set-env)
         if help_arg_passed $@; then
@@ -718,6 +719,7 @@ case "$1" in
             esac
             shift
         done
+        logout
         ;;
     import)
         shift
