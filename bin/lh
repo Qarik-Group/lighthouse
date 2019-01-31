@@ -14,6 +14,27 @@ fi
 
 STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
 
+SETUP_GENESIS_PATH()
+{
+  LH_ENVIRONMENT=${USE_ENV:?Need an environment}
+  LH_CF_API_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:api_url"
+  LH_CF_USER_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:admin_user"
+  LH_CF_PASSWORD_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:admin_password"
+  LH_CF_SELF_SIGNED_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:self_signed"
+
+#  LH_UAA_URL_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:uaa_url"
+
+}
+
+SETUP_GENERIC_VAULT_PATH()
+{
+  LH_ENVIRONMENT=${USE_ENV:?Need an environment}
+  LH_CF_API_PATH="secret/apa/cf/${LH_ENVIRONMENT}:domain"
+  LH_CF_PASSWORD_PATH="secret/ada/cf/${LH_ENVIRONMENT}:password"
+  #LH_CF_USER_PATH="secret/apa/cf/${LH_ENVIRONMENT}:admin_user"
+  #LH_CF_SELF_SIGNED_PATH="secret/ada/cf/${LH_ENVIRONMENT}:self_signed"
+}
+
 # read in configuration variables, when the file exits
 # it will not exist in piplines that run containers for example.
 if [[ ! "" = "$USE_ENV" ]] ;
@@ -204,7 +225,7 @@ cf_logout() {
     ####
     STEP "Logged out of cf."
     ####
-    
+
     cf logout
 
     cf api --unset
@@ -421,6 +442,12 @@ new_env() {
 # providing the VAULT_TOKEN here allows you to sign into lighthouse without prompts.
 
 export BASE_ENV="$LH_ENV_NAME"
+export BASE_TYPE="Genesis"          # Can be:
+                                    #      Genesis
+                                    #      "PCF with Vault"
+                                    #      "OSS with Vault"
+                                    #      "PCF with OM"
+
 export VAULT_TOKEN="replace-me"     # Set to "SKIP" to skip auto-login
 export VAULT_PATH="replace-me"
 export VAULT_ADDR="replace-me"
