@@ -230,6 +230,7 @@ check_safe() {
     safe get secret/handshake > /dev/null
     if [[ $? > 0 ]]; then
         echo "There was an error checking safe.  Please ensure your VAULT_ADDR and VAULT_TOKEN are correct."
+        return 1
     fi
 
 }
@@ -251,11 +252,11 @@ check_dependencies() {
 }
 
 safe_login() {
-    if [[ "SKIP" == "$VAULT_TOKEN" ]]
+    if [[ "$VAULT_TOKEN" == "SKIP" ]]
     then
         if check_safe
         then
-            echo "Skipping Vault login"
+            echo "Already logged in Vault. Skipping Vault login"
         else
             echo "Please login to safe or set the VAULT_TOKEN"
             exit 1
@@ -264,9 +265,23 @@ safe_login() {
         ####
         STEP "Logging into safe."
         ####
-
+        if [[ $VAULT_ADDR == +("replace-me"|'') ]]; then 
+          echo "Please configure VAULT_ADDR in your configure file "
+          exit 1
+        fi
+        if [[ $VAULT_ALIAS == +("replace-me"|'') ]]; then 
+           echo  "Please configure VAULT_ALIAS in your configure file"
+           exit
+        fi
         safe -k target ${VAULT_ADDR} ${VAULT_ALIAS}
         echo "$VAULT_TOKEN" | safe auth ${SAFE_AUTH}
+        if check_safe
+        then
+            echo "Logged in Vault successfully"
+        else
+            exit 1
+        fi
+
     fi
 }
 
