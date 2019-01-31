@@ -139,11 +139,11 @@ bosh_login() {
 
     # Create an alias
 
-    bosh alias-env ${BOSH_ENVIRONMENT} -e ${BOSH_IP} --ca-cert ${BOSH_CA_CERT}
+    BOSH_CA_CERT=${BOSH_CA_CERT} bosh alias-env ${BOSH_ENVIRONMENT} -e ${BOSH_IP}
 
     # Log into the BOSH_ENVIRONMENT
 
-    bosh login -e ${BOSH_ENVIRONMENT} --client=${BOSH_CLIENT} --client-secret=${BOSH_CLIENT_SECRET}
+    BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh login -e ${BOSH_ENVIRONMENT} 
 
 }
 
