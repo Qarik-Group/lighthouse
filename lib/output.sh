@@ -32,7 +32,7 @@ RESTORE_CURSOR="\e[u"
 info() {
   declare message="$@"
   declare status="INFO"
-  printf "\n${PURPLE}%-7s${RESET} %-.70s\n\n" "${status}" "${message}"
+  printf "\n${PURPLE}%-7s${RESET} %-.70s\n" "${status}" "${message}"
   return 0
 }
 

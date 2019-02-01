@@ -44,7 +44,6 @@ fab_test()
         if [[ "${prev_stack}" !=  ${stack} ]]
         then
 
-            info ""
             info "stack: ${stack}"
             prev_stack=${stack}
         fi

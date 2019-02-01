@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-
 (( ${BASH_VERSION//.*} > 3 )) || { 
-  echo -n -e "BASH_VERSION must be > 3" >&2 && exit 1 
+  echo -e "BASH_VERSION must be > 3" >&2 && exit 1 
 }
 
 # Beginning of function definitions
@@ -19,6 +18,10 @@ initialize_environment() {
     fi
   fi
 
+  . ${LH_DIRECTORY}/lib/output.sh
+}
+
+setup_environment() {
   # read in configuration variables, when the file exits
   # it will not exist in piplines that run containers for example.
   if [[ ! "" == "$USE_ENV" ]] ;
@@ -33,10 +36,8 @@ initialize_environment() {
     [[ -s "config.env" ]] && source "config.env"
   fi
 
-  . ${LH_DIRECTORY}/lib/output.sh
-
   # This must be the very first function called
-  # Compute required eenvironment variables and ensure their values are non-empty
+  # Compute required environment variables and ensure their values are non-empty
   # Order is environment, then overridden by configuration file 
   # Then either loaded from specified or default vault or set to default values
   # Computations are dependent on BASE_TYPE which can be GENESIS or PCF_VAULT
@@ -512,12 +513,12 @@ new_env() {
 # use VAULT_SKIP_VERIFY  = 1 for insecure, non-tls environments.
 # providing the VAULT_TOKEN here allows you to sign into lighthouse without prompts.
 
-export BASE_ENV="$LH_ENV_NAME"
+export BASE_ENV="replace-me"
 export BASE_TYPE="Genesis"          # Can be:
                                     #      Genesis
-                                    #      "PCF with Vault"
-                                    #      "OSS with Vault"
-                                    #      "PCF with OM"
+                                    #      "PCF_Vault"
+                                    #      "OCF_Vault"
+                                    #      "PCF_OM"
 
 export VAULT_TOKEN="replace-me"     # Set to "SKIP" to skip auto-login
 export VAULT_PATH="replace-me"
@@ -541,10 +542,14 @@ export BOSH_ENVIRONMENT="replace-me"
 
 # export CF_DIAL_TIMEOUT =180 # Uncomment if you need for login/usage
 # export CF_USERNAME="admin"
-# export CF_PASSWORD="replace-me"
+# export CF_DOMAIN="replace-me" # OPTIONAL
+# export VAULT_CF_PASSWORD="replace-me" # example: secret/.....
 # export CF_API="replace-me"
 # export CF_ORG="replace-me"
 # export CF_SPACE="replace-me"
+# export VAULT_BOSH_CA_CERT="replace-me" # example: secret/.....
+# export BOSH_CLIENT="replace-me"
+# export VAULT_BOSH_CLIENT_SECRET="replace-me" # example: secret/.....
 
 EOF
   fi
@@ -653,6 +658,7 @@ case "$1" in
     ;;
 
   login)
+    setup_environment
     shift
     if help_arg_passed $@; then
       login_usage
@@ -686,6 +692,7 @@ case "$1" in
     login "$@"
     ;;
   logout)
+    setup_environment
     shift
     if help_arg_passed $@; then
       logout_usage
@@ -719,6 +726,7 @@ case "$1" in
     logout "$@"
     ;;
   test)
+    setup_environment
     shift
     if help_arg_passed $@; then
       test_usage
@@ -777,6 +785,7 @@ case "$1" in
     ;;
   run)
     shift
+    setup_environment
     skip_login_arg_passed $@
     skip_login=$?
 
@@ -814,6 +823,7 @@ case "$1" in
     ;;
   repipe)
     shift
+    setup_environment
     repipe
     ;;
   *)
