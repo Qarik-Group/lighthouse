@@ -17,13 +17,15 @@ STEP() { echo ; echo ; echo "==\\" ; echo "===>" "$@" ; echo "==/" ; echo ; }
 SETUP_GENESIS_PATH()
 {
   LH_ENVIRONMENT=${USE_ENV:?Need an environment}
-  LH_CF_API_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:api_url"
+  [[ "" != "$LH_CF_API_PATH" ]] && LH_CF_API_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:api_url"
   LH_CF_USER_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:admin_user"
-  LH_CF_PASSWORD_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:admin_password"
+  [[ -z ${LH_CF_PASWORD_PATH} ]] && LH_CF_PASSWORD_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:admin_password"
   LH_CF_SELF_SIGNED_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:self_signed"
 
 #  LH_UAA_URL_PATH="secret/exodus/${LH_ENVIRONMENT}/cf:uaa_url"
-
+  LH_BOSH_IP_PATH="secret/exodus/"
+  LH_BOSH_CLIENT_PATH=""
+  LH_BOSH_CLIENT_SECRET_PATH=""
 }
 
 SETUP_GENERIC_VAULT_PATH()
@@ -37,7 +39,7 @@ SETUP_GENERIC_VAULT_PATH()
 
 # read in configuration variables, when the file exits
 # it will not exist in piplines that run containers for example.
-if [[ ! "" = "$USE_ENV" ]] ;
+if [[ ! "" == "$USE_ENV" ]] ;
   then
       if [[ -s "config.${USE_ENV}.env" ]]
        then
@@ -140,7 +142,48 @@ skip_login_arg_passed() {
     return 1
 }
 
+PRINT_AND_FAIL() {
+  ( >&2 echo "$@" )
+  exit 1
+}
+PRINT_DEBUG() {
+  ( >&2 echo "$@" )
+}
+
+required_value() {
+  lh_value_name=$1
+
+  RESULT=""
+
+  if [[ "$lh_value_name" != "" ]]
+  then
+    lh_value_contained=$(echo "${${lh_value_name}}")
+    PRINT_DEBUG "LH_contained ${lh_value_contained}"
+    if [[ "$lh_value_contained" != "" ]]
+    then
+      RESULT=${lh_value_contained}
+    else
+      PRINT_AND_FAIL "Value \"$lh_value_name\" is empty but required.  Please verify it's set"
+    fi
+  else
+    PRINT_AND_FAIL "Variable name missing"
+  fi
+
+  PRINT_DEBUG "RESULT=\"$RESULT\""
+  echo "$RESULT"
+}
+
 bosh_login() {
+
+    ####
+    # REQUIRED
+    ####
+
+    BOSH_ENVIRONMENT=$(required_value "LH_BOSH_ENVIRONMENT" )
+    BOSH_IP=$(required_value "LH_BOSH_IP")
+    BOSH_CA_CERT=/tmp/lh/certs.$$/bosh-ssl.crt
+    BOSH_CLIENT="admin"
+    BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/users/admin:password)
 
     ####
     STEP "Logging into bosh."
@@ -152,11 +195,6 @@ bosh_login() {
 
     # environment variables for BOSH needed to login.
 
-    BOSH_ENVIRONMENT="${BOSH_ENVIRONMENT}"
-    BOSH_IP="${BOSH_IP}"
-    BOSH_CA_CERT=/tmp/lh/certs.$$/bosh-ssl.crt
-    BOSH_CLIENT="admin"
-    BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/users/admin:password)
 
     # Create an alias
 
@@ -198,9 +236,10 @@ cf_login() {
     ####
 
     # environment variables for Cloud Foundry needed to login.
+    SETUP_GENESIS_PATH  # placeholder for testing
 
+    lh_cf_password=$(required_value LH_CF_PASSWORD)
     CF_USERNAME="admin"
-    CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/admin_user:password)
     CF_API="$( safe get secret/exodus/${BASE_ENV}/cf:api_url )"
 
     CF_ORG="system"
