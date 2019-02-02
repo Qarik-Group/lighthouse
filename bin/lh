@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+shopt -s extglob
+
 if [[ "" = "${LH_DIRECTORY}" ]]
 then
     LH_DIRECTORY=$(dirname $(dirname $0))
@@ -27,6 +29,19 @@ if [[ ! "" = "$USE_ENV" ]] ;
   else
     [[ -s "config.env" ]] && source "config.env"
 fi
+
+need_command() {
+    declare cmd=${1:?need_command() - no command name given   $(caller 0)}
+
+	if [[ ! -x "$(command -v $cmd)" ]]; then
+		echo "${cmd} not found in PATH."
+		exit 2
+	fi
+}
+
+need_command jq 
+need_command safe
+
 
 . ${LH_DIRECTORY}/lib/output.sh
 
@@ -68,7 +83,7 @@ find_test_path() {
 }
 
 component_test() {
-    declare component="${1:?Missing quota plan argument   $(caller 0)}"
+    declare component="${1:?component_test() - Missing quota plan argument   $(caller 0)}"
 
     ####
     STEP "Running ${component} tests."
@@ -372,7 +387,7 @@ logout() {
 
 run_individual_test() {
     declare test_file test_path
-    test_file="${1:?Missing quota plan argument   $(caller 0)}"
+    test_file="${1:?run_individual_test() - Missing quota plan argument   $(caller 0)}"
     [[ "${skip_login}" -ne 0 ]] && login
     test_path=$(find_test_path "${test_file}")
     if [[ $? -eq 0 ]]; then
