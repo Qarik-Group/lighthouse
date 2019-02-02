@@ -387,7 +387,7 @@ logout() {
 
 run_individual_test() {
     declare test_file test_path
-    test_file="${1:?run_individual_test() - Missing quota plan argument   $(caller 0)}"
+    test_file="${1:?run_individual_test() - Missing group/test argument   $(caller 0)}"
     [[ "${skip_login}" -ne 0 ]] && login
     test_path=$(find_test_path "${test_file}")
     if [[ $? -eq 0 ]]; then
