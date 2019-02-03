@@ -734,7 +734,7 @@ case "$1" in
             esac
             shift
         done
-        logout
+        [[ "${skip_login}" -ne 0 ]] && logout
         ;;
     import)
         shift
