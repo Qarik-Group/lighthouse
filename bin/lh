@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+shopt -s extglob
+
 if [[ -z ${LH_DIRECTORY:+is_set_and_not_empty}  ]]
 then
     LH_DIRECTORY=$(dirname $(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd))
@@ -33,6 +35,18 @@ fi
 }
 
 . output.sh
+
+need_command() {
+    declare cmd=${1:?need_command() - no command name given   $(caller 0)}
+
+	if [[ ! -x "$(command -v $cmd)" ]]; then
+		echo "${cmd} not found in PATH."
+		exit 2
+	fi
+}
+
+need_command jq 
+need_command safe
 
 set-env() {
     # take an environment name as a parameter
@@ -72,7 +86,7 @@ find_test_path() {
 }
 
 component_test() {
-    declare component="${1:?Missing quota plan argument   $(caller 0)}"
+    declare component="${1:?component_test() - Missing quota plan argument   $(caller 0)}"
 
     ####
     STEP "Running ${component} tests."
@@ -376,7 +390,7 @@ logout() {
 
 run_individual_test() {
     declare test_file test_path
-    test_file="${1:?Missing quota plan argument   $(caller 0)}"
+    test_file="${1:?run_individual_test() - Missing group/test argument   $(caller 0)}"
     [[ "${skip_login}" -ne 0 ]] && login
     test_path=$(find_test_path "${test_file}")
     if [[ $? -eq 0 ]]; then
@@ -723,7 +737,7 @@ case "$1" in
             esac
             shift
         done
-        logout
+        [[ "${skip_login}" -ne 0 ]] && logout
         ;;
     import)
         shift
