@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+#lh_test_requires uaa
+
 if [[ "" == "${LH_DIRECTORY}" ]] ; then
     echo "Please run this test through Lighthouse or set the LH_DIRECTORY and USE_ENV variables"
     exit 1
