@@ -7,9 +7,8 @@ shopt -s extglob
   echo -e "Bash version must be  4.X or greater" >&2 && exit 1
 }
 
-# Beginning of function definitions
-
 initialize_environment() {
+
   if [[ -z ${LH_DIRECTORY:+is_set_and_not_empty}  ]]
   then
     LH_DIRECTORY=$(dirname $(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd))
@@ -22,12 +21,9 @@ initialize_environment() {
     exit 1
   fi
 
-  . ${LH_DIRECTORY}/lib/output.sh
-}
-
-setup_environment() {
   # read in configuration variables, when the file exits
   # it will not exist in piplines that run containers for example.
+
   if [[ ! "" == "$USE_ENV" ]] ;
   then
     if [[ -s "config.${USE_ENV}.env" ]]
@@ -40,6 +36,171 @@ setup_environment() {
     [[ -s "config.env" ]] && source "config.env"
   fi
 
+  ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
+
+  . ${LH_DIRECTORY}/lib/output.sh
+}
+
+initialize_environment
+
+# Beginning of function definitions
+
+# TODO Do we leave these arrays here or move it to the config file?
+# TBD Do we leave these arrays here or move it to the config file?
+
+declare -A variables=( 
+  [BOSH_CA_CERT]="required"
+  [BOSH_CLIENT]="required"
+  [BOSH_CLIENT_SECRET]="required"
+  [CF_API]="required"
+  [CF_SKIP_SSL_VALIDATION]="optional"
+  [CF_ORG]="required"
+  [CF_SPACE]="required" 
+  [CF_PASSWORD]="required"
+  [CF_USERNAME]="required"
+  [CF_DOMAIN]="optional"
+)
+
+declare -A genesis_defaults=( 
+  [BOSH_CLIENT]="admin"
+  [CF_API]="safe get secret/exodus/${BASE_ENV}/cf:api_url"
+  [CF_API,type]="credhub|vault|om"
+  [CF_ORG]="system"
+  [CF_SPACE]="dev" 
+  [CF_USERNAME]="admin"
+  [CF_DOMAIN]="optional"
+)
+declare -A pcf_vault_defaults=( 
+  [BOSH_CLIENT]="admin"
+  [CF_API]="https://api.${CF_DOMAIN}"
+  [CF_ORG]="system"
+  [CF_SPACE]="dev" 
+  [CF_USERNAME]="admin"
+  [CF_DOMAIN]="optional"
+)
+
+declare -A custom_variables=(
+  [CF_PASSWORD]="VAULT_CF_PASSWORD"
+  [BOSH_CA_CERT]="VAULT_BOSH_CA_CERT"
+  [BOSH_CLIENT_SECRET]="VAULT_BOSH_CLIENT_SECRET"
+)
+
+declare -A custom_genesis_paths=(
+  [CF_PASSWORD]="${VAULT_PATH}/cf/admin_user:password"
+  [BOSH_CA_CERT]="${VAULT_PATH}/bosh/ssl/ca:certificate"
+  [BOSH_CLIENT_SECRET]="${VAULT_PATH}/bosh/users/admin:password"
+
+)
+
+#PCF_with_Vault
+declare -A custom_vault_paths=(
+  [CF_PASSWORD]="\${VAULT_PATH}/cf/\${BASE_ENV}/password"
+  [BOSH_CA_CERT]="${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CA_CERT"
+  [BOSH_CLIENT_SECRET]="${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CLIENT_SECRET"
+) 
+
+# arg 1 base_name
+# arg 2 error message
+# arg 3 custom_path
+# arg 4 default_value
+
+#TODO Do we need to test for certain variables that must exist first BASE_TYPE, BASE_ENV VAULT_PATH since
+#     since they exist in the tables above or are required for this function to work correctly? 
+#TODO What do we do with CF_DOMAIN since it is BASE_TYPE dependent?
+#TODO Maybe we need to pass in more arguments because of the differences between the BASE_TYPES instead of using
+#     data arrays
+find_variable() {
+    declare base_variable=${1:?find_variable() - no environment variable name given   $(caller 0)}
+    declare required=${variables[${base_variable}]}
+    declare base_type=${BASE_TYPE,,}
+    declare -nl defaults="${base_type}_defaults"
+
+    if [[ -z ${required} ]]; then
+        # TODO Do we need custom error messages?
+        echo ${base_variable} is not defined in the variables table >&2
+        return 2
+    fi
+
+    # look in environment
+
+    if [[ -n "${!base_variable:+"has value"}" ]]
+    then
+      echo ${!base_variable}
+      return 0
+    else
+      echo ${base_variable} has no value or is empty >&2
+    fi
+
+    # look in config file 
+
+    declare indirect_variable
+    indirect_variable="LH_${base_variable}"
+    if [[ -n "${!indirect_variable:+"has value"}" ]]
+    then
+      echo ${!indirect_variable}
+      return 0
+    else
+      echo ${indirect_variable} has no value or is empty >&2
+    fi
+
+    # look in custom path
+
+    if [[ -n "${custom_variables[${base_variable}]}:+"has_custom_path"}" ]]
+    then
+      indirect_variable=${custom_variables[${base_variable}]}
+
+      declare indirect_path
+      # look in vault path
+      # look in genesis path
+      case ${base_type} in
+        genesis)
+          indirect_path=${custom_genesis_paths[${base_variable}]}
+          ;;
+        pcf_vault)
+          indirect_path=${custom_vault_paths[${base_variable}]}
+          ;;
+        ocf_vault|pcf_om)
+          echo "BASE_TYPE value \"${BASE_TYPE}\" is not yet implemented"  >&2
+          return 2
+          ;;
+        *)
+          echo "BASE_TYPE value \"${BASE_TYPE}\" is not a valid value"  >&2
+          return 2
+          ;;
+      esac
+
+      echo indirect_variable ${indirect_variable}
+      echo indirect_path ${indirect_path}
+
+      if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" ]]
+      then
+        echo safe get ${!indirect_variable}
+        return 0
+      elif [[ -n "${indirect_path}" && -n "${indirect_path}" ]]
+      then
+        echo safe get ${indirect_path}
+        return 0
+      else
+        echo "No ${BASE_TYPE} paths found" >&2
+      fi
+    else
+      echo ${base_variable} has no custom paths >&2
+    fi
+
+    # deal with default values
+
+    echo defaults_reference  ${defaults}
+    echo all keys ${!defaults[@]}
+    echo default value ${defaults["${base_variable}"]}
+    echo default type ${defaults["${base_variable},type"]}
+}
+
+find_variable "CF_PASSWORD"
+find_variable "CF_DOMAIN"
+find_variable "CF_API"
+exit 0
+
+setup_environment() {
   # This must be the very first function called
   # Compute required environment variables and ensure their values are non-empty
   # Order is environment, then overridden by configuration file 
@@ -675,7 +836,6 @@ usage() {
 
 (( $# > 0 )) || usage # First line of main code
 
-initialize_environment
 
 case "$1" in
   -d)
