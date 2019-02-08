@@ -100,11 +100,11 @@ setup_environment() {
         then
           CF_PASSWORD=$(safe get ${VAULT_CF_PASSWORD})
         else
-          CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}/password)
+          CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}:password)
         fi
       }
       [[ -n $CF_DOMAIN ]] || {
-        CF_DOMAIN=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}/domain)
+        CF_DOMAIN=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}:domain)
       }
       [[ -n $CF_USERNAME ]] || {
         CF_USERNAME="admin"
@@ -132,18 +132,18 @@ setup_environment() {
         then
           BOSH_CA_CERT=$(safe get ${VAULT_BOSH_CA_CERT})
         else
-          BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CA_CERT)
+          BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}:BOSH_CA_CERT)
         fi
       }
       [[ -n $BOSH_CLIENT ]] || {
-        BOSH_CLIENT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CLIENT)
+        BOSH_CLIENT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}:BOSH_CLIENT)
       }
       [[ -n $BOSH_CLIENT_SECRET ]] || {
         if [[ -n ${VAULT_BOSH_CLIENT_SECRET} ]]
         then
           BOSH_CLIENT_SECRET=$(safe get ${VAULT_BOSH_CLIENT_SECRET})
         else
-          BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CLIENT_SECRET)
+          BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}:BOSH_CLIENT_SECRET)
         fi
       }
       ;;
@@ -428,7 +428,7 @@ uaa_login() {
   then
     echo "Using UAA from Vault: ${UAA_ADDR}"
   else
-    CF_API="$( safe get secret/exodus/${BASE_ENV}/cf:api_url )"
+    # CF_API="$( safe get secret/exodus/${BASE_ENV}/cf:api_url )"
     echo "CFAPI: ${CF_API}"
 
     UAA_ADDR=$(curl -k ${CF_API} |jq -r '.links.uaa.href')
