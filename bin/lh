@@ -325,9 +325,12 @@ bosh_tests() {
 cf_login() {
   step "Logging into cf."
 
+  declare skip_ssl_flag="--skip-ssl-validation"
+
   info "Setting cf api to ${CF_API}"
 
-  cf api --skip-ssl-validation "${CF_API}" 
+  [[ "${LH_CF_SKIP_SSL_VALIDATION}" == "true" ]] || skip_ssl_flag=""
+  cf api ${skip_ssl_flag} "${CF_API}" 
 
   info "Authenticating to CF as user ${CF_USERNAME}"
 
@@ -540,7 +543,8 @@ new_env() {
     echo "Adding Environment '${LH_ENV_NAME}'"
     cat << EOF > config.${LH_ENV_NAME}.env
 # the root path in vault to the secrets stored in vault.
-# use VAULT_SKIP_VERIFY  = 1 for insecure, non-tls environments.
+# use VAULT_SKIP_VERIFY  = true for insecure, non-tls environments.
+# use CF_SKIP_SSL_VALIDATION  = true for insecure, non-tls environments.
 # providing the VAULT_TOKEN here allows you to sign into lighthouse without prompts.
 
 export BASE_ENV="${LH_ENV_NAME}"                # Change name to config file if copied
