@@ -570,7 +570,7 @@ export BOSH_ENVIRONMENT="replace-me"
 # environment variables for Cloud Foundry
 # can be used to override default vault values
 
-# export CF_DIAL_TIMEOUT =180 # Uncomment if you need for login/usage
+# export CF_DIAL_TIMEOUT=180 # Uncomment if you need for login/usage
 # export CF_USERNAME="admin"
 # export CF_DOMAIN="replace-me" # OPTIONAL
 # export VAULT_CF_PASSWORD="replace-me" # example: secret/.....
