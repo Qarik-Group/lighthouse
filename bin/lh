@@ -48,9 +48,9 @@ setup_environment() {
   case "${BASE_TYPE,,}" in # Note: ${x,,} converts x to lowercase
     genesis)
       [[ -n $CF_PASSWORD ]] || {
-        if [[ -n ${LH_VAULT_CF_PASSWORD} ]]
+        if [[ -n ${LH_VAULT_CF_PASSWORD_PATH} ]]
         then
-          CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD})
+          CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD_PATH})
         else
           CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/admin_user:password)
         fi
@@ -74,9 +74,9 @@ setup_environment() {
         fail "\$BOSH_IP must be passed in or set in configuration."
       }
       [[ -n $BOSH_CA_CERT ]] || {
-        if [[ -n ${LH_VAULT_BOSH_CA_CERT} ]]
+        if [[ -n ${LH_VAULT_BOSH_CA_CERT_PATH} ]]
         then
-          BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT})
+          BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT_PATH})
         else
           BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/ssl/ca:certificate)
         fi
@@ -85,9 +85,9 @@ setup_environment() {
         BOSH_CLIENT="admin"
       }
       [[ -n $BOSH_CLIENT_SECRET ]] || {
-        if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET} ]]
+        if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET_PATH} ]]
         then
-          BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET})
+          BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET_PATH})
         else
           BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/users/admin:password)
         fi
@@ -96,9 +96,9 @@ setup_environment() {
 
     pcf_vault)
       [[ -n $CF_PASSWORD ]] || {
-        if [[ -n ${LH_VAULT_CF_PASSWORD} ]]
+        if [[ -n ${LH_VAULT_CF_PASSWORD_PATH} ]]
         then
-          CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD})
+          CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD_PATH})
         else
           CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}/password)
         fi
@@ -128,9 +128,9 @@ setup_environment() {
         fail "\$BOSH_IP must be passed in or set in configuration."
       }
       [[ -n $BOSH_CA_CERT ]] || {
-        if [[ -n ${LH_VAULT_BOSH_CA_CERT} ]]
+        if [[ -n ${LH_VAULT_BOSH_CA_CERT_PATH} ]]
         then
-          BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT})
+          BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT_PATH})
         else
           BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CA_CERT)
         fi
@@ -139,9 +139,9 @@ setup_environment() {
         BOSH_CLIENT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CLIENT)
       }
       [[ -n $BOSH_CLIENT_SECRET ]] || {
-        if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET} ]]
+        if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET_PATH} ]]
         then
-          BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET})
+          BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET_PATH})
         else
           BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CLIENT_SECRET)
         fi
