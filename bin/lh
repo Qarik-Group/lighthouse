@@ -48,9 +48,9 @@ setup_environment() {
   case "${BASE_TYPE,,}" in # Note: ${x,,} converts x to lowercase
     genesis)
       [[ -n $CF_PASSWORD ]] || {
-        if [[ -n ${VAULT_CF_PASSWORD} ]]
+        if [[ -n ${LH_VAULT_CF_PASSWORD} ]]
         then
-          CF_PASSWORD=$(safe get ${VAULT_CF_PASSWORD})
+          CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD})
         else
           CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/admin_user:password)
         fi
@@ -74,9 +74,9 @@ setup_environment() {
         fail "\$BOSH_IP must be passed in or set in configuration."
       }
       [[ -n $BOSH_CA_CERT ]] || {
-        if [[ -n ${VAULT_BOSH_CA_CERT} ]]
+        if [[ -n ${LH_VAULT_BOSH_CA_CERT} ]]
         then
-          BOSH_CA_CERT=$(safe get ${VAULT_BOSH_CA_CERT})
+          BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT})
         else
           BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/ssl/ca:certificate)
         fi
@@ -85,9 +85,9 @@ setup_environment() {
         BOSH_CLIENT="admin"
       }
       [[ -n $BOSH_CLIENT_SECRET ]] || {
-        if [[ -n ${VAULT_BOSH_CLIENT_SECRET} ]]
+        if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET} ]]
         then
-          BOSH_CLIENT_SECRET=$(safe get ${VAULT_BOSH_CLIENT_SECRET})
+          BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET})
         else
           BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/users/admin:password)
         fi
@@ -96,9 +96,9 @@ setup_environment() {
 
     pcf_vault)
       [[ -n $CF_PASSWORD ]] || {
-        if [[ -n ${VAULT_CF_PASSWORD} ]]
+        if [[ -n ${LH_VAULT_CF_PASSWORD} ]]
         then
-          CF_PASSWORD=$(safe get ${VAULT_CF_PASSWORD})
+          CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD})
         else
           CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}/password)
         fi
@@ -128,9 +128,9 @@ setup_environment() {
         fail "\$BOSH_IP must be passed in or set in configuration."
       }
       [[ -n $BOSH_CA_CERT ]] || {
-        if [[ -n ${VAULT_BOSH_CA_CERT} ]]
+        if [[ -n ${LH_VAULT_BOSH_CA_CERT} ]]
         then
-          BOSH_CA_CERT=$(safe get ${VAULT_BOSH_CA_CERT})
+          BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT})
         else
           BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CA_CERT)
         fi
@@ -139,9 +139,9 @@ setup_environment() {
         BOSH_CLIENT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CLIENT)
       }
       [[ -n $BOSH_CLIENT_SECRET ]] || {
-        if [[ -n ${VAULT_BOSH_CLIENT_SECRET} ]]
+        if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET} ]]
         then
-          BOSH_CLIENT_SECRET=$(safe get ${VAULT_BOSH_CLIENT_SECRET})
+          BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET})
         else
           BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CLIENT_SECRET)
         fi
@@ -543,43 +543,44 @@ new_env() {
 # use VAULT_SKIP_VERIFY  = 1 for insecure, non-tls environments.
 # providing the VAULT_TOKEN here allows you to sign into lighthouse without prompts.
 
-export BASE_ENV="replace-me"
-export BASE_TYPE="Genesis"          # Can be:
-                                    #      Genesis
-                                    #      "PCF_Vault"
-                                    #      "OCF_Vault"
-                                    #      "PCF_OM"
+export BASE_ENV="${LH_ENV_NAME}"                # Change name to config file if copied
+export BASE_TYPE="\${BASE_TYPE:="Genesis"}"      # Can be:
+                                                    #      Genesis
+                                                    #      "PCF_Vault"
+                                                    #      "OCF_Vault"
+                                                    #      "PCF_OM"
 
-export VAULT_TOKEN="replace-me"     # Set to "SKIP" to skip auto-login
-export VAULT_PATH="replace-me"
-export VAULT_ADDR="replace-me"
-export VAULT_ALIAS="replace-me"
-export VAULT_SKIP_VERIFY=1
-export SAFE_AUTH=token              # can be token or github
+export VAULT_TOKEN="\${VAULT_TOKEN:="replace-me"}"   # Set to "SKIP" to skip auto-login
+export VAULT_PATH="\${VAULT_PATH:="replace-me"}"
+export VAULT_ADDR="\${VAULT_ADDR:="replace-me"}"
+export VAULT_ALIAS="\${VAULT_ALIAS:="replace-me"}"
+export VAULT_SKIP_VERIFY="\${VAULT_SKIP_VERIFY:="true"}"  # true or false
+export SAFE_AUTH="\${SAFE_AUTH:="token"}"              # can be token or github
 
-export CONCOURSE_TARGET="replace-me"
-export CONCOURSE_URL="replace-me"
-export GITHUB_OWNER=starkandwayne   # replace if you are using your own fork
+export CONCOURSE_TARGET="\${CONCOURSE_TARGET:="replace-me"}"
+export CONCOURSE_URL="\${CONCOURSE_URL:="replace-me"}"
+export GITHUB_OWNER="\${GITHUB_OWNER:="starkandwayne"}"  # replace if you are using your own fork
 
 # environment variables for BOSH
 # can be used to override default vault values
 
-export BOSH_IP="replace-me"
-export BOSH_ENVIRONMENT="replace-me"
+export BOSH_IP="\${BOSH_IP:="replace-me"}"
+export BOSH_ENVIRONMENT="\${BOSH_ENVIRONMENT:="replace-me"}"
 
 # environment variables for Cloud Foundry
 # can be used to override default vault values
 
-# export CF_DIAL_TIMEOUT =180 # Uncomment if you need for login/usage
-# export CF_USERNAME="admin"
-# export CF_DOMAIN="replace-me" # OPTIONAL
-# export VAULT_CF_PASSWORD="replace-me" # example: secret/.....
-# export CF_API="replace-me"
-# export CF_ORG="replace-me"
-# export CF_SPACE="replace-me"
-# export VAULT_BOSH_CA_CERT="replace-me" # example: secret/.....
-# export BOSH_CLIENT="replace-me"
-# export VAULT_BOSH_CLIENT_SECRET="replace-me" # example: secret/.....
+# export CF_DIAL_TIMEOUT="\${CF_DIAL_TIMEOUT:=180}" # Uncomment if you need for login/usage
+export CF_USERNAME="\${CF_USERNAME:="admin"}"
+export LH_CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:="true"}"
+export CF_DOMAIN="\${CF_DOMAIN:="replace-me"}" # OPTIONAL
+export LH_VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD:="replace-me"}" # example: secret/.....
+export CF_API="\${CF_API:="replace-me"}"
+export CF_ORG="\${CF_ORG:="replace-me"}"
+export CF_SPACE="\${CF_SPACE:="replace-me"}"
+export LH_VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT:="replace-me"}" # example: secret/.....
+export BOSH_CLIENT="\${BOSH_CLIENT:="replace-me"}"
+export LH_VAULT_BOSH_CLIENT_SECRET_PATH="\${VAULT_BOSH_CLIENT_SECRET:="replace-me"}" # example: secret/.....
 
 EOF
   fi
@@ -591,8 +592,7 @@ EOF
   mkdir -p ${LH_ENV_NAME}/tests/cf
   mkdir -p ${LH_ENV_NAME}/tests/bosh
   mkdir -p ${LH_ENV_NAME}/tests/uaa
-  #cp -Riv ${LH_DIRECTORY}/templates/data ${LH_ENV_NAME}/
-  #cp -Riv ${LH_DIRECTORY}/templates/tests ${LH_ENV_NAME}/
+  mkdir -p ${LH_ENV_NAME}/lib
 
   exit 0
 }
