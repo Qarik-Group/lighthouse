@@ -68,10 +68,10 @@ setup_environment() {
         CF_SPACE="dev"
       }
       [[ -n $BOSH_ENVIRONMENT ]] || {
-        fail "\$BOSH_ENVIRONMENT must be passed in or set in configuration."
+        BOSH_ENVIRONMENT="${USE_ENV}_lh_alias"
       }
       [[ -n $BOSH_IP ]] || {
-        fail "\$BOSH_IP must be passed in or set in configuration."
+        BOSH_IP=$(safe get secret/exodus/${BASE_ENV}/bosh:url)
       }
       [[ -n $BOSH_CA_CERT ]] || {
         if [[ -n ${LH_VAULT_BOSH_CA_CERT_PATH} ]]
@@ -288,8 +288,8 @@ bosh_login() {
   step "Logging into bosh."
 
   # obtain the bosh CA cert, place in a temp folder, to store in BOSH_CA_CERT.
-  mkdir -p /tmp/lh/certs.$$
-  local _tmp_file=/tmp/lh/certs.$$/bosh-ssl.crt
+  mkdir -p /tmp/lh_certs.$$
+  local _tmp_file=/tmp/lh_certs.$$/bosh-ssl.crt
 
   info "Storing the BOSH_CA_CERT in the temp file ${_tmp_file}"
 
@@ -313,7 +313,7 @@ bosh_logout() {
   bosh logout -e ${BOSH_ENVIRONMENT}
 
   # remove the cert we've got, in case we're going to target a new director
-  rm -rf /tmp/lh/certs.*
+  rm -rf /tmp/lh_certs.*
 }
 
 bosh_tests() {
