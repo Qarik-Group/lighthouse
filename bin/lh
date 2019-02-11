@@ -68,7 +68,7 @@ setup_environment() {
         CF_SPACE="dev"
       }
       [[ -n $BOSH_ENVIRONMENT ]] || {
-        BOSH_ENVIRONMENT="${USE_ENV}_lh_alias"
+        BOSH_ENVIRONMENT="${USE_ENV}_lh"
       }
       [[ -n $BOSH_IP ]] || {
         BOSH_IP=$(safe get secret/exodus/${BASE_ENV}/bosh:url)
@@ -295,14 +295,16 @@ bosh_login() {
 
   echo -e -n "${BOSH_CA_CERT}\n" > ${_tmp_file}
 
-  info "Logging into the BOSH_ENVIRONMENT ${BOSH_ENVIRONMENT}"
-
-  BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh login -e ${BOSH_IP}
-
   # Create an alias
   info "Creating an environment alias for ${BOSH_ENVIRONMENT} to ${BOSH_IP} with ca-crt ${_tmp_file}"
 
-  BOSH_CA_CERT=${_tmp_file} bosh alias-env ${BOSH_ENVIRONMENT} -e ${BOSH_IP}
+  BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh alias-env ${BOSH_ENVIRONMENT} -e ${BOSH_IP}
+
+  info "Logging into the BOSH_ENVIRONMENT ${BOSH_ENVIRONMENT}"
+
+  BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh login -e ${BOSH_IP}
+  # printf "%s\n%s\n" ${BOSH_CLIENT} ${BOSH_CLIENT_SECRET} | (BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT= BOSH_CLIENT_SECRET=  bosh login -e ${BOSH_IP})
+
 }
 
 bosh_logout() {
