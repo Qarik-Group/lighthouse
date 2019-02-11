@@ -63,7 +63,7 @@ declare -A variables=(
 
 declare -A genesis_defaults=( 
   [BOSH_CLIENT]="admin"
-  [CF_API]="echo safe get secret/exodus/${BASE_ENV}/cf:api_url"
+  [CF_API]="echo safe get secret/exodus/\${BASE_ENV}/cf:api_url"
   [CF_API,type]="command"
   [CF_ORG]="system"
   [CF_SPACE]="dev" 
@@ -107,7 +107,7 @@ declare -A custom_vault_paths=(
 #TODO Maybe we need to pass in more arguments because of the differences between the BASE_TYPES instead of using
 #     data arrays
 set_variable() {
-    declare base_variable=${1:?find_variable() - no environment variable name given   $(caller 0)}
+    declare base_variable=${1:?set_variable() - no environment variable name given   $(caller 0)}
     declare required=${variables[${base_variable}]}
     declare base_type=${BASE_TYPE,,}
     declare -nl defaults="${base_type}_defaults"
@@ -196,13 +196,13 @@ set_variable() {
   }
 
 echo ==== BEFORE CF_PASSWORD $CF_PASSWORD
-find_variable "CF_PASSWORD"
+set_variable "CF_PASSWORD"
 echo ==== AFTER CF_PASSWORD $CF_PASSWORD
 echo ==== BEFORE CF_DOMAIN $CF_DOMAIN
-find_variable "CF_DOMAIN"
+set_variable "CF_DOMAIN"
 echo ==== AFTER CF_DOMAIN $CF_DOMAIN
 echo ==== BEFORE CF_API $CF_API
-find_variable "CF_API"
+set_variable "CF_API"
 echo ==== AFTER CF_API $CF_API
 exit 0
 
