@@ -63,7 +63,6 @@ declare -A variables=(
   [BOSH_IP]="required"
 )
 
-echo "====> BASE_ENV is ${BASE_ENV}"
 declare -A genesis_defaults=( 
   [BOSH_CLIENT]="admin"
   [CF_API]="safe get secret/exodus/${BASE_ENV}/cf:api_url"
@@ -139,19 +138,6 @@ set_variable() {
     else
       echo ${base_variable} has no value or is empty >&2
     fi
-
-    # look in config file 
-
-    #TBD This code may not be needed anymore with the new config definition using :=
-    # declare indirect_variable
-    # indirect_variable="LH_${base_variable}"
-    # if [[ -n "${!indirect_variable:+"has value"}" ]]
-    # then
-      # echo ${!indirect_variable}
-      # return 0
-    # else
-      # echo ${indirect_variable} has no value or is empty >&2
-    # fi
 
     # look in custom path
 
