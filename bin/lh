@@ -759,7 +759,7 @@ export GITHUB_OWNER="\${GITHUB_OWNER:="starkandwayne"}"  # replace if you are us
 # can be used to override default vault values
 
 export BOSH_IP="\${BOSH_IP:="replace-me"}"
-export BOSH_ENVIRONMENT="\${BOSH_ENVIRONMENT:="replace-me"}"
+export BOSH_ALIAS="\${BOSH_ALIAS:="replace-me"}"
 
 # environment variables for Cloud Foundry
 # can be used to override default vault values
