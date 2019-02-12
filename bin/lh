@@ -59,17 +59,24 @@ declare -A variables=(
   [CF_PASSWORD]="required"
   [CF_USERNAME]="required"
   [CF_DOMAIN]="optional"
+  [BOSH_ALIAS]="required"
+  [BOSH_IP]="required"
 )
 
+echo "====> BASE_ENV is ${BASE_ENV}"
 declare -A genesis_defaults=( 
   [BOSH_CLIENT]="admin"
-  [CF_API]="echo safe get secret/exodus/\${BASE_ENV}/cf:api_url"
+  [CF_API]="safe get secret/exodus/${BASE_ENV}/cf:api_url"
   [CF_API,type]="command"
   [CF_ORG]="system"
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
   [CF_DOMAIN]="optional"
+  [BOSH_ALIAS]="${BASE_ENV}"
+  [BOSH_IP]="safe get secret/exodus/${BASE_ENV}/bosh:url"
+  [BOSH_IP,type]="command"
 )
+
 declare -A pcf_vault_defaults=( 
   [BOSH_CLIENT]="admin"
   [CF_API]="https://api.${CF_DOMAIN}"
@@ -111,6 +118,7 @@ set_variable() {
     declare required=${variables[${base_variable}]}
     declare base_type=${BASE_TYPE,,}
     declare -nl defaults="${base_type}_defaults"
+    declare value
 
     if [[ -z ${required} ]]; then
         # TODO Do we need custom error messages?
@@ -118,13 +126,15 @@ set_variable() {
         return 2
     fi
 
-    [[ ${!base_variable} == "replace-me" ]] && ${!base_variable}=""
+    [[ ${!base_variable} == "replace-me" ]] && {
+      declare -gx ${base_variable}=""
+    }
 
     # look in environment
 
     if [[ -n "${!base_variable:+"has value"}" ]]
     then
-      echo ${!base_variable}
+      # echo ${!base_variable}
       return 0
     else
       echo ${base_variable} has no value or is empty >&2
@@ -133,15 +143,15 @@ set_variable() {
     # look in config file 
 
     #TBD This code may not be needed anymore with the new config definition using :=
-    declare indirect_variable
-    indirect_variable="LH_${base_variable}"
-    if [[ -n "${!indirect_variable:+"has value"}" ]]
-    then
-      echo ${!indirect_variable}
-      return 0
-    else
-      echo ${indirect_variable} has no value or is empty >&2
-    fi
+    # declare indirect_variable
+    # indirect_variable="LH_${base_variable}"
+    # if [[ -n "${!indirect_variable:+"has value"}" ]]
+    # then
+      # echo ${!indirect_variable}
+      # return 0
+    # else
+      # echo ${indirect_variable} has no value or is empty >&2
+    # fi
 
     # look in custom path
 
@@ -174,11 +184,14 @@ set_variable() {
 
       if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" ]]
       then
-        echo safe get ${!indirect_variable}
+        value=$(safe get ${!indirect_variable})
+        declare -gx "${base_variable}=${value}"
+        
         return 0
       elif [[ -n "${indirect_path}" && -n "${indirect_path}" ]]
       then
-        echo safe get ${indirect_path}
+        value=$(safe get ${indirect_path})
+        declare -gx "${base_variable}=${value}"
         return 0
       else
         echo "No ${BASE_TYPE} paths found" >&2
@@ -189,144 +202,152 @@ set_variable() {
 
     # deal with default values
 
-     declare value="${defaults[${base_variable}]}"
+     value="${defaults[${base_variable}]}"
      [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
 
     declare -gx "${base_variable}=${value}"
   }
 
-echo ==== BEFORE CF_PASSWORD $CF_PASSWORD
-set_variable "CF_PASSWORD"
-echo ==== AFTER CF_PASSWORD $CF_PASSWORD
-echo ==== BEFORE CF_DOMAIN $CF_DOMAIN
-set_variable "CF_DOMAIN"
-echo ==== AFTER CF_DOMAIN $CF_DOMAIN
-echo ==== BEFORE CF_API $CF_API
-set_variable "CF_API"
-echo ==== AFTER CF_API $CF_API
-exit 0
-
 setup_environment() {
-  # This must be the very first function called
-  # Compute required environment variables and ensure their values are non-empty
-  # Order is environment, then overridden by configuration file 
-  # Then either loaded from specified or default vault or set to default values
-  # Computations are dependent on BASE_TYPE which can be GENESIS or PCF_VAULT
-  case "${BASE_TYPE,,}" in # Note: ${x,,} converts x to lowercase
-    genesis)
-      [[ -n $CF_PASSWORD ]] || {
-        if [[ -n ${LH_VAULT_CF_PASSWORD_PATH} ]]
-        then
-          CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD_PATH})
-        else
-          CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/admin_user:password)
-        fi
-      }
-      [[ -n $CF_USERNAME ]] || {
-        CF_USERNAME="admin"
-      }
-      [[ -n $CF_API ]] || {
-        CF_API="$( safe get secret/exodus/${BASE_ENV}/cf:api_url )"
-      }
-      [[ -n $CF_ORG ]] || {
-        CF_ORG="system"
-      }
-      [[ -n $CF_SPACE ]] || {
-        CF_SPACE="dev"
-      }
-      [[ -n $BOSH_ENVIRONMENT ]] || {
-        BOSH_ENVIRONMENT="${USE_ENV}_lh"
-      }
-      [[ -n $BOSH_IP ]] || {
-        BOSH_IP=$(safe get secret/exodus/${BASE_ENV}/bosh:url)
-      }
-      [[ -n $BOSH_CA_CERT ]] || {
-        if [[ -n ${LH_VAULT_BOSH_CA_CERT_PATH} ]]
-        then
-          BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT_PATH})
-        else
-          BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/ssl/ca:certificate)
-        fi
-      }
-      [[ -n $BOSH_CLIENT ]] || {
-        BOSH_CLIENT="admin"
-      }
-      [[ -n $BOSH_CLIENT_SECRET ]] || {
-        if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET_PATH} ]]
-        then
-          BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET_PATH})
-        else
-          BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/users/admin:password)
-        fi
-      }
-      ;;
+  set_variable BOSH_ALIAS
+  set_variable BOSH_CA_CERT
+  set_variable BOSH_CLIENT
+  set_variable BOSH_CLIENT_SECRET
+  set_variable BOSH_IP
+  set_variable CF_API
+  set_variable CF_SKIP_SSL_VALIDATION
+  set_variable CF_ORG
+  set_variable CF_SPACE
+  set_variable CF_PASSWORD
+  set_variable CF_USERNAME
+  set_variable CF_DOMAIN
 
-    pcf_vault)
-      [[ -n $CF_PASSWORD ]] || {
-        if [[ -n ${LH_VAULT_CF_PASSWORD_PATH} ]]
-        then
-          CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD_PATH})
-        else
-          CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}:password)
-        fi
-      }
-      [[ -n $CF_DOMAIN ]] || {
-        CF_DOMAIN=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}:domain)
-      }
-      [[ -n $CF_USERNAME ]] || {
-        CF_USERNAME="admin"
-      }
-      [[ -n $CF_API ]] || {
-        # TODO: Verify that this is the correct API URL
-        CF_API="https://api.${CF_DOMAIN}" # Domain set above.
-      }
-      [[ -n $CF_ORG ]] || {
-        CF_ORG="system"
-      }
-      [[ -n $CF_SPACE ]] || {
-        CF_SPACE="dev"
-      }
-      [[ -n $BOSH_ENVIRONMENT ]] || {
-        fail "\$BOSH_ENVIRONMENT must be passed in or set in configuration."
-        # TODO: Validate that this environment matches what is in vault at this path:
-        #BOSH_ENVIRONMENT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_ENVIRONMENT)
-      }
-      [[ -n $BOSH_IP ]] || {
-        fail "\$BOSH_IP must be passed in or set in configuration."
-      }
-      [[ -n $BOSH_CA_CERT ]] || {
-        if [[ -n ${LH_VAULT_BOSH_CA_CERT_PATH} ]]
-        then
-          BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT_PATH})
-        else
-          BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}:BOSH_CA_CERT)
-        fi
-      }
-      [[ -n $BOSH_CLIENT ]] || {
-        BOSH_CLIENT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}:BOSH_CLIENT)
-      }
-      [[ -n $BOSH_CLIENT_SECRET ]] || {
-        if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET_PATH} ]]
-        then
-          BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET_PATH})
-        else
-          BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}:BOSH_CLIENT_SECRET)
-        fi
-      }
-      ;;
-    *)
-      fail "\$BASE_TYPE must be one of {GENESIS,PCF_VAULT}"
-      ;;
-  esac
-  # Next we ensure that the variables that are required are set and non-empty.
-  required_vars=(
-  CF_PASSWORD CF_USERNAME CF_API CF_ORG CF_SPACE 
-  BOSH_CA_CERT BOSH_CLIENT BOSH_CLIENT_SECRET
-  )
-  for v in "${required_vars[@]}"
-  do eval "[[ -n \${$v} ]] || fail '$v is required to be given or configured'"
-  done
+  export | grep -E "CF_|BOSH_"
+
+  #exit 0
 }
+
+# setup_environment() {
+#   # This must be the very first function called
+#   # Compute required environment variables and ensure their values are non-empty
+#   # Order is environment, then overridden by configuration file 
+#   # Then either loaded from specified or default vault or set to default values
+#   # Computations are dependent on BASE_TYPE which can be GENESIS or PCF_VAULT
+#   case "${BASE_TYPE,,}" in # Note: ${x,,} converts x to lowercase
+#     genesis)
+#       [[ -n $CF_PASSWORD ]] || {
+#         if [[ -n ${LH_VAULT_CF_PASSWORD_PATH} ]]
+#         then
+#           CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD_PATH})
+#         else
+#           CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/admin_user:password)
+#         fi
+#       }
+#       [[ -n $CF_USERNAME ]] || {
+#         CF_USERNAME="admin"
+#       }
+#       [[ -n $CF_API ]] || {
+#         CF_API="$( safe get secret/exodus/${BASE_ENV}/cf:api_url )"
+#       }
+#       [[ -n $CF_ORG ]] || {
+#         CF_ORG="system"
+#       }
+#       [[ -n $CF_SPACE ]] || {
+#         CF_SPACE="dev"
+#       }
+#       [[ -n $BOSH_ENVIRONMENT ]] || {
+#         BOSH_ENVIRONMENT="${USE_ENV}_lh"
+#       }
+#       [[ -n $BOSH_IP ]] || {
+#         BOSH_IP=$(safe get secret/exodus/${BASE_ENV}/bosh:url)
+#       }
+#       [[ -n $BOSH_CA_CERT ]] || {
+#         if [[ -n ${LH_VAULT_BOSH_CA_CERT_PATH} ]]
+#         then
+#           BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT_PATH})
+#         else
+#           BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/ssl/ca:certificate)
+#         fi
+#       }
+#       [[ -n $BOSH_CLIENT ]] || {
+#         BOSH_CLIENT="admin"
+#       }
+#       [[ -n $BOSH_CLIENT_SECRET ]] || {
+#         if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET_PATH} ]]
+#         then
+#           BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET_PATH})
+#         else
+#           BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/users/admin:password)
+#         fi
+#       }
+#       ;;
+# 
+#     pcf_vault)
+#       [[ -n $CF_PASSWORD ]] || {
+#         if [[ -n ${LH_VAULT_CF_PASSWORD_PATH} ]]
+#         then
+#           CF_PASSWORD=$(safe get ${LH_VAULT_CF_PASSWORD_PATH})
+#         else
+#           CF_PASSWORD=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}:password)
+#         fi
+#       }
+#       [[ -n $CF_DOMAIN ]] || {
+#         CF_DOMAIN=$(safe get ${VAULT_PATH}/cf/${BASE_ENV}:domain)
+#       }
+#       [[ -n $CF_USERNAME ]] || {
+#         CF_USERNAME="admin"
+#       }
+#       [[ -n $CF_API ]] || {
+#         # TODO: Verify that this is the correct API URL
+#         CF_API="https://api.${CF_DOMAIN}" # Domain set above.
+#       }
+#       [[ -n $CF_ORG ]] || {
+#         CF_ORG="system"
+#       }
+#       [[ -n $CF_SPACE ]] || {
+#         CF_SPACE="dev"
+#       }
+#       [[ -n $BOSH_ENVIRONMENT ]] || {
+#         fail "\$BOSH_ENVIRONMENT must be passed in or set in configuration."
+#         # TODO: Validate that this environment matches what is in vault at this path:
+#         #BOSH_ENVIRONMENT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_ENVIRONMENT)
+#       }
+#       [[ -n $BOSH_IP ]] || {
+#         fail "\$BOSH_IP must be passed in or set in configuration."
+#       }
+#       [[ -n $BOSH_CA_CERT ]] || {
+#         if [[ -n ${LH_VAULT_BOSH_CA_CERT_PATH} ]]
+#         then
+#           BOSH_CA_CERT=$(safe get ${LH_VAULT_BOSH_CA_CERT_PATH})
+#         else
+#           BOSH_CA_CERT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}:BOSH_CA_CERT)
+#         fi
+#       }
+#       [[ -n $BOSH_CLIENT ]] || {
+#         BOSH_CLIENT=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}:BOSH_CLIENT)
+#       }
+#       [[ -n $BOSH_CLIENT_SECRET ]] || {
+#         if [[ -n ${LH_VAULT_BOSH_CLIENT_SECRET_PATH} ]]
+#         then
+#           BOSH_CLIENT_SECRET=$(safe get ${LH_VAULT_BOSH_CLIENT_SECRET_PATH})
+#         else
+#           BOSH_CLIENT_SECRET=$(safe get ${VAULT_PATH}/bosh/${BASE_ENV}:BOSH_CLIENT_SECRET)
+#         fi
+#       }
+#       ;;
+#     *)
+#       fail "\$BASE_TYPE must be one of {GENESIS,PCF_VAULT}"
+#       ;;
+#   esac
+#   # Next we ensure that the variables that are required are set and non-empty.
+#   required_vars=(
+#   CF_PASSWORD CF_USERNAME CF_API CF_ORG CF_SPACE 
+#   BOSH_CA_CERT BOSH_CLIENT BOSH_CLIENT_SECRET
+#   )
+#   for v in "${required_vars[@]}"
+#   do eval "[[ -n \${$v} ]] || fail '$v is required to be given or configured'"
+#   done
+# }
 
 need_command() {
   declare cmd=${1:?need_command() - no command name given   $(caller 0)}
@@ -463,13 +484,13 @@ bosh_login() {
   echo -e -n "${BOSH_CA_CERT}\n" > ${_tmp_file}
 
   # Create an alias
-  info "Creating an environment alias for ${BOSH_ENVIRONMENT} to ${BOSH_IP} with ca-crt ${_tmp_file}"
+  info "Creating an environment alias for ${BOSH_ALIAS} to ${BOSH_IP} with ca-crt ${_tmp_file}"
 
-  BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh alias-env ${BOSH_ENVIRONMENT} -e ${BOSH_IP}
+  BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh alias-env ${BOSH_ALIAS} -e ${BOSH_IP}
 
-  info "Logging into the BOSH_ENVIRONMENT ${BOSH_ENVIRONMENT}"
+  info "Logging into the BOSH Alias ${BOSH_ALIAS}"
 
-  BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh login -e ${BOSH_IP}
+  BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh login -e ${BOSH_ALIAS}
   # printf "%s\n%s\n" ${BOSH_CLIENT} ${BOSH_CLIENT_SECRET} | (BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT= BOSH_CLIENT_SECRET=  bosh login -e ${BOSH_IP})
 
 }
@@ -477,9 +498,9 @@ bosh_login() {
 bosh_logout() {
   step "Log out of BOSH."
 
-  info "Logging out of BOSH Environment ${BOSH_ENVIRONMENT}"
+  info "Logging out of BOSH Environment ${BOSH_ALIAS}"
 
-  bosh logout -e ${BOSH_ENVIRONMENT}
+  bosh logout -e ${BOSH_ALIAS}
 
   # remove the cert we've got, in case we're going to target a new director
   rm -rf /tmp/lh_certs.*
