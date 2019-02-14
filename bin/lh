@@ -52,6 +52,7 @@ declare -A variables=(
   [BOSH_CA_CERT]="required"
   [BOSH_CLIENT]="required"
   [BOSH_CLIENT_SECRET]="required"
+  [BOSH_ENVIRONMENT]="required"
   [CF_API]="required"
   [CF_SKIP_SSL_VALIDATION]="optional"
   [CF_ORG]="required"
@@ -72,6 +73,7 @@ declare -A genesis_defaults=(
   [CF_USERNAME]="admin"
   [CF_DOMAIN]="optional"
   [BOSH_ALIAS]="${BASE_ENV}"
+  [BOSH_ENVIRONMENT]="${BASE_ENV}"
   [BOSH_IP]="safe get secret/exodus/${BASE_ENV}/bosh:url"
   [BOSH_IP,type]="command"
 )
@@ -86,9 +88,9 @@ declare -A pcf_vault_defaults=(
 )
 
 declare -A custom_variables=(
-  [CF_PASSWORD]="VAULT_CF_PASSWORD"
-  [BOSH_CA_CERT]="VAULT_BOSH_CA_CERT"
-  [BOSH_CLIENT_SECRET]="VAULT_BOSH_CLIENT_SECRET"
+  [CF_PASSWORD]="VAULT_CF_PASSWORD_PATH"
+  [BOSH_CA_CERT]="VAULT_BOSH_CA_CERT_PATH"
+  [BOSH_CLIENT_SECRET]="VAULT_BOSH_CLIENT_SECRET_PATH"
 )
 
 declare -A custom_genesis_paths=(
@@ -188,8 +190,12 @@ set_variable() {
 
     # deal with default values
 
-     value="${defaults[${base_variable}]}"
-     [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
+    [[ -z "${defaults[${base_variable}]+-has_value}" ]] && {
+      echo $base_variable has no default value
+      return 1
+    }
+    value="${defaults[${base_variable}]}"
+    [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
 
     declare -gx "${base_variable}=${value}"
   }
@@ -199,6 +205,7 @@ setup_environment() {
   set_variable BOSH_CA_CERT
   set_variable BOSH_CLIENT
   set_variable BOSH_CLIENT_SECRET
+  set_variable BOSH_ENVIRONMENT
   set_variable BOSH_IP
   set_variable CF_API
   set_variable CF_SKIP_SSL_VALIDATION
@@ -206,11 +213,13 @@ setup_environment() {
   set_variable CF_SPACE
   set_variable CF_PASSWORD
   set_variable CF_USERNAME
-  set_variable CF_DOMAIN
+  [[ ${BASE_ENV,,} == "pcf_vault" ]] && {
+    set_variable CF_DOMAIN
+  }
 
-  export | grep -E "CF_|BOSH_"
+  export | grep -E "CF_|BOSH_|LH_|VAULT_"
 
-  #exit 0
+  exit 0
 }
 
 # setup_environment() {
@@ -754,13 +763,13 @@ export BOSH_ALIAS="\${BOSH_ALIAS:="replace-me"}"
 export CF_USERNAME="\${CF_USERNAME:="admin"}"
 export LH_CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:="true"}"
 export CF_DOMAIN="\${CF_DOMAIN:="replace-me"}" # OPTIONAL
-export LH_VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD:="replace-me"}" # example: secret/.....
+export LH_VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:="replace-me"}" # example: secret/.....
 export CF_API="\${CF_API:="replace-me"}"
 export CF_ORG="\${CF_ORG:="replace-me"}"
 export CF_SPACE="\${CF_SPACE:="replace-me"}"
-export LH_VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT:="replace-me"}" # example: secret/.....
+export LH_VAULT_BOSH_CA_CERT_PATH="\${LH_VAULT_BOSH_CA_CERT_PATH:="replace-me"}" # example: secret/.....
 export BOSH_CLIENT="\${BOSH_CLIENT:="replace-me"}"
-export LH_VAULT_BOSH_CLIENT_SECRET_PATH="\${VAULT_BOSH_CLIENT_SECRET:="replace-me"}" # example: secret/.....
+export LH_VAULT_BOSH_CLIENT_SECRET_PATH="\${LH_VAULT_BOSH_CLIENT_SECRET_PATH:="replace-me"}" # example: secret/.....
 
 EOF
   fi
