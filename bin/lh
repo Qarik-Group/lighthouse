@@ -88,9 +88,9 @@ declare -A pcf_vault_defaults=(
 )
 
 declare -A custom_variables=(
-  [CF_PASSWORD]="VAULT_CF_PASSWORD_PATH"
-  [BOSH_CA_CERT]="VAULT_BOSH_CA_CERT_PATH"
-  [BOSH_CLIENT_SECRET]="VAULT_BOSH_CLIENT_SECRET_PATH"
+  [CF_PASSWORD]="LH_VAULT_CF_PASSWORD_PATH"
+  [BOSH_CA_CERT]="LH_VAULT_BOSH_CA_CERT_PATH"
+  [BOSH_CLIENT_SECRET]="LH_VAULT_BOSH_CLIENT_SECRET_PATH"
 )
 
 declare -A custom_genesis_paths=(
@@ -101,19 +101,12 @@ declare -A custom_genesis_paths=(
 )
 
 #PCF_with_Vault
-declare -A custom_vault_paths=(
+declare -A custom_pcf_vault_paths=(
   [CF_PASSWORD]="${VAULT_PATH}/cf/${BASE_ENV}/password"
   [BOSH_CA_CERT]="${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CA_CERT"
   [BOSH_CLIENT_SECRET]="${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CLIENT_SECRET"
 ) 
 
-# arg 1 base_name
-
-#TODO Do we need to test for certain variables that must exist first BASE_TYPE, BASE_ENV VAULT_PATH since
-#     since they exist in the tables above or are required for this function to work correctly? 
-#TODO What do we do with CF_DOMAIN since it is BASE_TYPE dependent?
-#TODO Maybe we need to pass in more arguments because of the differences between the BASE_TYPES instead of using
-#     data arrays
 set_variable() {
     declare base_variable=${1:?set_variable() - no environment variable name given   $(caller 0)}
     declare required=${variables[${base_variable}]}
@@ -146,26 +139,28 @@ set_variable() {
     if [[ -n "${custom_variables[${base_variable}]}:+"has_custom_path"}" ]]
     then
       indirect_variable=${custom_variables[${base_variable}]}
+      declare  -nl custom_paths="custom_${base_type}_paths"
+      declare indirect_path=${custom_paths[${base_variable}]}
 
-      declare indirect_path
+      # declare indirect_path
       # look in vault path
       # look in genesis path
-      case ${base_type} in
-        genesis)
-          indirect_path=${custom_genesis_paths[${base_variable}]}
-          ;;
-        pcf_vault)
-          indirect_path=${custom_vault_paths[${base_variable}]}
-          ;;
-        ocf_vault|pcf_om)
-          echo "BASE_TYPE value \"${BASE_TYPE}\" is not yet implemented"  >&2
-          return 2
-          ;;
-        *)
-          echo "BASE_TYPE value \"${BASE_TYPE}\" is not a valid value"  >&2
-          return 2
-          ;;
-      esac
+      # case ${base_type} in
+        # genesis)
+          # indirect_path=${custom_genesis_paths[${base_variable}]}
+          # ;;
+        # pcf_vault)
+          # indirect_path=${custom_vault_paths[${base_variable}]}
+          # ;;
+        # ocf_vault|pcf_om)
+          # echo "BASE_TYPE value \"${BASE_TYPE}\" is not yet implemented"  >&2
+          # return 2
+          # ;;
+        # *)
+          # echo "BASE_TYPE value \"${BASE_TYPE}\" is not a valid value"  >&2
+          # return 2
+          # ;;
+      # esac
 
       echo indirect_variable ${indirect_variable}
       echo indirect_path ${indirect_path}
@@ -174,9 +169,8 @@ set_variable() {
       then
         value=$(safe get ${!indirect_variable})
         declare -gx "${base_variable}=${value}"
-        
         return 0
-      elif [[ -n "${indirect_path}" && -n "${indirect_path}" ]]
+      elif [[ -n "${indirect_path}" ]]
       then
         value=$(safe get ${indirect_path})
         declare -gx "${base_variable}=${value}"
@@ -198,28 +192,31 @@ set_variable() {
     [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
 
     declare -gx "${base_variable}=${value}"
+    return 0
   }
 
 setup_environment() {
-  set_variable BOSH_ALIAS
-  set_variable BOSH_CA_CERT
-  set_variable BOSH_CLIENT
-  set_variable BOSH_CLIENT_SECRET
-  set_variable BOSH_ENVIRONMENT
-  set_variable BOSH_IP
-  set_variable CF_API
-  set_variable CF_SKIP_SSL_VALIDATION
-  set_variable CF_ORG
-  set_variable CF_SPACE
-  set_variable CF_PASSWORD
-  set_variable CF_USERNAME
+  declare -i ret_code=0
+  set_variable BOSH_ALIAS             || ret_code=$?
+  set_variable BOSH_CA_CERT           || ret_code=$?
+  set_variable BOSH_CLIENT            || ret_code=$?
+  set_variable BOSH_CLIENT_SECRET     || ret_code=$?
+  set_variable BOSH_ENVIRONMENT       || ret_code=$?
+  set_variable BOSH_IP                || ret_code=$?
+  set_variable CF_API                 || ret_code=$?
+  set_variable CF_SKIP_SSL_VALIDATION || ret_code=$?
+  set_variable CF_ORG                 || ret_code=$?
+  set_variable CF_SPACE               || ret_code=$?
+  set_variable CF_PASSWORD            || ret_code=$?
+  set_variable CF_USERNAME            || ret_code=$?
+
   [[ ${BASE_ENV,,} == "pcf_vault" ]] && {
-    set_variable CF_DOMAIN
+    set_variable CF_DOMAIN || ret_code=$?
   }
 
   export | grep -E "CF_|BOSH_|LH_|VAULT_"
-
-  exit 0
+  echo rc_code $ret_code
+  exit $ret_code
 }
 
 # setup_environment() {
