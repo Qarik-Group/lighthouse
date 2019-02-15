@@ -605,9 +605,14 @@ uaa_login() {
 
   # Environment Variables
   UAA_USER="admin"
-  UAA_PASSWORD=$(safe get ${VAULT_PATH}/cf/uaa/client_secrets:admin_client)
-  UAA_ADDR=$(safe get secret/exodus/${BASE_ENV}/cf:uaa_url)
-
+  UAA_PASSWORD=""
+  UAA_ADDR=""
+  if safe exists "${VAULT_PATH}/cf/uaa/client_secrets:admin_client"; then
+    UAA_PASSWORD=$(safe get "${VAULT_PATH}/cf/uaa/client_secrets:admin_client")
+  fi
+  if safe exists "secret/exodus/${BASE_ENV}/cf:uaa_url"; then
+    UAA_ADDR=$(safe get "secret/exodus/${BASE_ENV}/cf:uaa_url")
+  fi
   # Pull the UAA Address from Cloud Foundry if not explicitly set
   if [[ ! "" == "$UAA_ADDR" ]]
   then
