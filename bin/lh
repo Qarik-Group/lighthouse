@@ -37,6 +37,7 @@ initialize_environment() {
   fi
 
   : ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
+  : ${BASE_ENV:?"BASE_ENV must be set to a value"}
 
   . ${LH_DIRECTORY}/lib/output.sh
 }
@@ -140,6 +141,7 @@ set_variable() {
     then
       indirect_variable=${custom_variables[${base_variable}]}
       declare  -nl custom_paths="custom_${base_type}_paths"
+      # TODO Can we test if nameref variable reference exists
       declare indirect_path=${custom_paths[${base_variable}]}
 
       # declare indirect_path
