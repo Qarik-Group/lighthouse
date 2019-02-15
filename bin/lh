@@ -72,7 +72,6 @@ declare -A genesis_defaults=(
   [CF_ORG]="system"
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
-  [CF_DOMAIN]="optional"
   [BOSH_ALIAS]="${BASE_ENV}"
   [BOSH_ENVIRONMENT]="${BASE_ENV}"
   [BOSH_IP]="safe get secret/exodus/${BASE_ENV}/bosh:url"
@@ -81,6 +80,7 @@ declare -A genesis_defaults=(
 
 declare -A pcf_vault_defaults=( 
   [BOSH_CLIENT]="admin"
+  [CF_DOMAIN]=""
   [CF_API]="https://api.${CF_DOMAIN}"
   [CF_ORG]="system"
   [CF_SPACE]="dev" 
@@ -187,9 +187,12 @@ set_variable() {
     # deal with default values
 
     [[ -z "${defaults[${base_variable}]+-has_value}" ]] && {
-      # TODO Add the required/optional test
-      echo $base_variable has no default value
+      [[ ${required} == "optional" ]] && return 0
+      [[ ${required} == "required" ]] && {
+        error "$base_variable is required to be given or configured"
+      }
       return 1
+      
     }
     value="${defaults[${base_variable}]}"
     [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
@@ -206,16 +209,13 @@ setup_environment() {
   set_variable BOSH_CLIENT_SECRET     || ret_code=$?
   set_variable BOSH_ENVIRONMENT       || ret_code=$?
   set_variable BOSH_IP                || ret_code=$?
+  set_variable CF_DOMAIN              || ret_code=$?
   set_variable CF_API                 || ret_code=$?
   set_variable CF_SKIP_SSL_VALIDATION || ret_code=$?
   set_variable CF_ORG                 || ret_code=$?
   set_variable CF_SPACE               || ret_code=$?
   set_variable CF_PASSWORD            || ret_code=$?
   set_variable CF_USERNAME            || ret_code=$?
-
-  [[ ${BASE_ENV,,} == "pcf_vault" ]] && {
-    set_variable CF_DOMAIN || ret_code=$?
-  }
 
   export | grep -E "CF_|BOSH_|LH_|VAULT_"
   echo rc_code $ret_code
@@ -344,6 +344,49 @@ setup_environment() {
 #   done
 # }
 
+add_path_if_not_exists() {
+    declare test_path=${1:?add_path_if_not_exists() - no directory given   $(caller 0)}
+    shift
+    if [[ ":$PATH:" != *":${test_path}:"* ]]; then
+        ls -id "${test_path}" | read path_inode rest
+        for inode in $@; do
+            if [[ "${path_inode}" == "${inode}" ]]; then
+                reutn 0
+            fi
+        done
+        PATH="${test_path}:$PATH"
+        echo ${path_inode}
+    else
+        ls -id "${test_path}" | read path_inode rest
+        echo ${path_inode}
+    fi
+    return 0
+}
+
+declare inode_list
+
+is_path_in_PATH() {
+    declare test_path=${1:?add_path_if_not_exists() - no directory given   $(caller 0)}
+    [[ ! -d "${test_path}" ]] && return 2 
+    read path_inode rest < <(ls -idH "${test_path}") #grr subshells
+    echo ${path_inode}
+    [[ ":$PATH:" == *":${test_path}:"* ]]
+}
+
+add_lib_paths_to_PATH() {
+    declare path path_inode
+    for path in "${LH_DIRECTORY}/lib/" "lib/" "${USE_ENV}/lib/"
+    do
+        path_inode=$(is_path_in_PATH "${path}")
+        case $? in
+            2) continue ;;
+            1) [[ :${inode_list}: != *:${path_inode}:* ]] && PATH="${path}:$PATH"
+        esac
+        inode_list="${path_inode}:${inode_list}"
+    done
+    return 0
+}
+
 need_command() {
   declare cmd=${1:?need_command() - no command name given   $(caller 0)}
 
@@ -391,6 +434,10 @@ find_test_path() {
     return 1
   fi
   return 0
+}
+
+has_test_requires_line() {
+    grep -m 1 -E '^[[:blank:]]*#[[:blank:]]*lh_test_requires([[:blank:]]+[[:alnum:]_-]+)+[[:blank:]]*$' $@
 }
 
 component_test() {
@@ -768,7 +815,7 @@ export BOSH_ALIAS="\${BOSH_ALIAS:="replace-me"}"
 export CF_USERNAME="\${CF_USERNAME:="admin"}"
 export LH_CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:="true"}"
 export CF_DOMAIN="\${CF_DOMAIN:="replace-me"}" # OPTIONAL
-export LH_VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:="replace-me"}" # example: secret/.....
+export LH_VAULT_CF_PASSWORD_PATH="\${LH_VAULT_CF_PASSWORD_PATH:="replace-me"}" # example: secret/.....
 export CF_API="\${CF_API:="replace-me"}"
 export CF_ORG="\${CF_ORG:="replace-me"}"
 export CF_SPACE="\${CF_SPACE:="replace-me"}"
