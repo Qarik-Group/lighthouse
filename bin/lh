@@ -185,6 +185,7 @@ set_variable() {
     # deal with default values
 
     [[ -z "${defaults[${base_variable}]+-has_value}" ]] && {
+      # TODO Add the required/optional test
       echo $base_variable has no default value
       return 1
     }
