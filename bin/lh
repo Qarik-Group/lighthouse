@@ -110,6 +110,7 @@ declare -A custom_pcf_vault_paths=(
 
 set_variable() {
     declare base_variable=${1:?set_variable() - no environment variable name given   $(caller 0)}
+    declare display_name=${2:-${base_variable}}
     declare required=${variables[${base_variable}]}
     declare base_type=${BASE_TYPE,,}
     declare -nl defaults="${base_type}_defaults"
@@ -117,7 +118,7 @@ set_variable() {
 
     if [[ -z ${required} ]]; then
         # TODO Do we need custom error messages?
-        echo ${base_variable} is not defined in the variables table >&2
+        echo ${display_name} is not defined in the variables table >&2
         return 2
     fi
 
@@ -129,10 +130,9 @@ set_variable() {
 
     if [[ -n "${!base_variable:+"has value"}" ]]
     then
-      # echo ${!base_variable}
       return 0
     else
-      echo ${base_variable} has no value or is empty >&2
+      echo "DEBUG: ${display_name} has no value or is empty" >&2
     fi
 
     # look in custom path
@@ -164,8 +164,8 @@ set_variable() {
           # ;;
       # esac
 
-      echo indirect_variable ${indirect_variable}
-      echo indirect_path ${indirect_path}
+      echo "DEBUG: indirect_variable ${indirect_variable}"
+      echo "DEBUG: indirect_path ${indirect_path}"
 
       if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" ]]
       then
@@ -178,18 +178,18 @@ set_variable() {
         declare -gx "${base_variable}=${value}"
         return 0
       else
-        echo "No ${BASE_TYPE} paths found" >&2
+        echo "DEBUG: No ${BASE_TYPE} paths found" >&2
       fi
     else
-      echo ${base_variable} has no custom paths >&2
+      echo "DEBUG: ${display_name} has no custom paths" >&2
     fi
 
     # deal with default values
 
-    [[ -z "${defaults[${base_variable}]+-has_value}" ]] && {
+    [[ -z "${defaults[${base_variable}]+has_value}" ]] && {
       [[ ${required} == "optional" ]] && return 0
       [[ ${required} == "required" ]] && {
-        error "$base_variable is required to be given or configured"
+        error "${display_name} is required to be given or configured"
       }
       return 1
       
