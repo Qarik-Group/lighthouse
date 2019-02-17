@@ -92,8 +92,8 @@ debug() {
 }
 
 step() {
-  echo -e <<"EOF"
-==\\
+  cat <<EOF
+==\\\\
 ===> $@
 ==//
 EOF
