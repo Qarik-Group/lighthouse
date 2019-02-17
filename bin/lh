@@ -12,7 +12,6 @@ initialize_environment() {
   if [[ -z ${LH_DIRECTORY:+is_set_and_not_empty}  ]]
   then
     LH_DIRECTORY=$(dirname $(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd))
-    echo "LH_DIRECTORY=${LH_DIRECTORY}"
   fi
 
   if [[ ! -r "${LH_DIRECTORY}/lib/output.sh" ]]
@@ -391,13 +390,51 @@ need_command() {
   declare cmd=${1:?need_command() - no command name given   $(caller 0)}
 
   if [[ ! -x "$(command -v $cmd)" ]]; then
-    echo "${cmd} not found in PATH."
-    exit 2
+    echo "The ${cmd} is not found in your PATH.  Please install and update"
+    echo "your PATH before proceeding."
+    return 1
   fi
+  return 0
 }
 
-need_command jq 
-need_command safe
+extract_version() {
+  declare line={$1:?"extract_version() Missing search string $(caller 0)"}
+  [[ "${line}" =~ ([[:digit:]]+(\.[[:digit:]]+){1,2}) ]]
+}
+
+is_version_ok() {
+  declare minimum=${1:?"compare_version() Missing minimum version $(caller 0)"}
+  declare version=${2:?"compare_version() Missing compare version $(caller 0)"}
+  IFS=. read -a minver <<< ${minimum}
+  IFS=. read -a cmpver <<< ${version}
+  (( ${minver[0]:-0} < ${cmpver[0]:-0} )) && return 0
+  (( ${minver[0]:-0} > ${cmpver[0]:-0} )) && return 1
+  (( ${minver[1]:-0} < ${cmpver[1]:-0} )) && return 0
+  (( ${minver[1]:-0} > ${cmpver[1]:-0} )) && return 1
+  (( ${minver[2]:-0} < ${cmpver[2]:-0} )) && return 0
+  (( ${minver[2]:-0} > ${cmpver[2]:-0} )) && return 1
+  return 0
+}
+
+has_minimum_program_version() {
+  declare program="${1:?has_minimum_program_version() Missing program name $(caller 0)}"
+  declare minimum="${2:?compare_version() Missing minimum version $(caller 0)}"
+  declare version="${3:?compare_version() Missing compare version $(caller 0)}"
+
+  if extract_version "${version}"
+  then
+    declare progver="${BASH_REMATCH[1]}"
+    if ! is_version_ok "${minimum}" "${progver}"
+    then
+      echo "You need to upgrade ${program} from version ${progver} to at least version ${minimum}" 
+      return 1
+    fi
+  else
+    echo "Unable to extract version for ${program}" 
+    return 1
+  fi
+  return 0
+}
 
 set_env() {
   # take an environment name as a parameter
@@ -601,13 +638,16 @@ check_safe() {
 
 check_dependencies() {
   step "Checking software dependencies."
+  local ret_code=0
 
-  for command in "jq" "cf" "bosh" "safe" "make" "uaa"; do
-    type ${command} > /dev/null
-    if [[ $? > 0 ]]; then
-      echo "The ${command} is not found.  Please install before proceeding."
-    fi
+  for cmd in jq cf bosh safe uaa bash 
+  do
+    need_command ${cmd} || ret_code=$?
   done
+  (( rc > 0 )) && exit $ret_code
+
+  has_minimum_program_version jq 1.5 "$(jq --version)" || ret_code=$?
+  return $ret_code
 }
 
 safe_login() {
