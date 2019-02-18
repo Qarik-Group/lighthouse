@@ -202,6 +202,7 @@ set_variable() {
 
 setup_environment() {
   declare -i ret_code=0
+  step "Setting up the environment"
   set_variable BOSH_ALIAS             || ret_code=$?
   set_variable BOSH_CA_CERT           || ret_code=$?
   set_variable BOSH_CLIENT            || ret_code=$?
@@ -216,9 +217,9 @@ setup_environment() {
   set_variable CF_PASSWORD            || ret_code=$?
   set_variable CF_USERNAME            || ret_code=$?
 
-  export | grep -E "CF_|BOSH_|LH_|VAULT_"
-  echo rc_code $ret_code
-  exit $ret_code
+  export | grep -E "CF_|BOSH_|LH_|VAULT_" | awk '{ print"DEBUG: "  $0; }'
+  echo "DEBUG: setup_environment() rc_code $ret_code"
+  return $ret_code
 }
 
 # setup_environment() {
