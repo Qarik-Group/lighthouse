@@ -632,6 +632,7 @@ check_safe() {
     echo "There was an error checking safe.  Please ensure your VAULT_ADDR and VAULT_TOKEN are correct."
     return 1
   fi
+  echo -e "\nOK\n"
 }
 
 # loop through the list of required CLI software.
@@ -647,6 +648,8 @@ check_dependencies() {
   (( rc > 0 )) && exit $ret_code
 
   has_minimum_program_version jq 1.5 "$(jq --version)" || ret_code=$?
+  has_minimum_program_version cf 6.38 "$(cf --version)" || ret_code=$?
+  (( ret_code == 0 )) && echo -e "\nOK\n"
   return $ret_code
 }
 
