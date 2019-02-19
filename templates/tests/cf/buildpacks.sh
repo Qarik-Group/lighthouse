@@ -46,11 +46,11 @@ fab_test()
         if [[ "${prev_stack}" !=  ${stack} ]]
         then
 
-            info ""
-            info "stack: ${stack}"
+            result ""
+            result "stack: ${stack}"
             prev_stack=${stack}
         fi
-        info  "        ${name}"
+        result  "        ${name}"
     done 
     return 0
 }
