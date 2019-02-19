@@ -475,7 +475,7 @@ find_test_path() {
 }
 
 has_test_requires_line() {
-    grep -m 1 -E '^[[:blank:]]*#[[:blank:]]*lh_test_requires([[:blank:]]+[[:alnum:]_-]+)+[[:blank:]]*$' $@
+    grep -m 20 -E '^[[:blank:]]*#[[:blank:]]*lh_test_requires([[:blank:]]+[[:alnum:]_-]+)+[[:blank:]]*$' $@
 }
 
 component_test() {
