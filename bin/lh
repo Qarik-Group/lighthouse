@@ -7,6 +7,31 @@ shopt -s extglob
   echo -e "Bash version must be  4.X or greater" >&2 && exit 1
 }
 
+declare inode_list
+
+is_path_in_PATH() {
+    declare test_path=${1:?is_path_in_PATH() - no directory given   $(caller 0)}
+    [[ ! -d "${test_path}" ]] && return 2 
+    read path_inode rest < <(ls -idH "${test_path}") #grr subshells
+    echo ${path_inode}
+    [[ ":$PATH:" == *":${test_path}:"* ]]
+}
+
+add_lib_paths_to_PATH() {
+    declare path path_inode
+    for path in "${LH_DIRECTORY}/lib/" "$PWD/lib/" "${USE_ENV}/lib/"
+    do
+        path_inode=$(is_path_in_PATH "${path}")
+        case $? in
+            2) continue ;;
+            1) [[ :${inode_list}: != *:${path_inode}:* ]] && PATH="${path}:$PATH"
+        esac
+        inode_list="${path_inode}:${inode_list}"
+    done
+    return 0
+}
+
+
 initialize_environment() {
 
   if [[ -z ${LH_DIRECTORY:+is_set_and_not_empty}  ]]
@@ -39,9 +64,16 @@ initialize_environment() {
   : ${BASE_ENV:?"BASE_ENV must be set to a value"}
 
   . ${LH_DIRECTORY}/lib/output.sh
+
+  echo $PATH
+  add_lib_paths_to_PATH
+  echo DEBUG: after add call $PATH
+  echo DEBUG: after add call $inode_list
 }
 
 initialize_environment
+echo DEBUG: after initialize call $PATH
+echo DEBUG: after initialize call $inode_list
 
 # Beginning of function definitions
 
@@ -363,30 +395,6 @@ add_path_if_not_exists() {
     return 0
 }
 
-declare inode_list
-
-is_path_in_PATH() {
-    declare test_path=${1:?add_path_if_not_exists() - no directory given   $(caller 0)}
-    [[ ! -d "${test_path}" ]] && return 2 
-    read path_inode rest < <(ls -idH "${test_path}") #grr subshells
-    echo ${path_inode}
-    [[ ":$PATH:" == *":${test_path}:"* ]]
-}
-
-add_lib_paths_to_PATH() {
-    declare path path_inode
-    for path in "${LH_DIRECTORY}/lib/" "lib/" "${USE_ENV}/lib/"
-    do
-        path_inode=$(is_path_in_PATH "${path}")
-        case $? in
-            2) continue ;;
-            1) [[ :${inode_list}: != *:${path_inode}:* ]] && PATH="${path}:$PATH"
-        esac
-        inode_list="${path_inode}:${inode_list}"
-    done
-    return 0
-}
-
 need_command() {
   declare cmd=${1:?need_command() - no command name given   $(caller 0)}
 
@@ -642,7 +650,7 @@ check_dependencies() {
   step "Checking software dependencies."
   local ret_code=0
 
-  for cmd in jq cf bosh safe uaa bash 
+  for cmd in jq cf bosh safe uaa bash vault
   do
     need_command ${cmd} || ret_code=$?
   done
@@ -650,6 +658,8 @@ check_dependencies() {
 
   has_minimum_program_version jq 1.5 "$(jq --version)" || ret_code=$?
   has_minimum_program_version cf 6.38 "$(cf --version)" || ret_code=$?
+  has_minimum_program_version safe 0.9.9 "$(safe --version)" || ret_code=$?
+  has_minimum_program_version vault 0.9.0 "$(vault --version)" || ret_code=$?
   (( ret_code == 0 )) && echo -e "\nOK\n"
   return $ret_code
 }
@@ -777,6 +787,18 @@ run_individual_test() {
 }
 
 repipe() {
+  local ret_code=0
+
+  step "Generating pipeline files."
+  for cmd in jq spruce fly vault
+  do
+    need_command ${cmd} || ret_code=$?
+  done
+  has_minimum_program_version jq 1.5 "$(jq --version)" || ret_code=$?
+  has_minimum_program_version spruce 0.14.0 "$(spruce --version)" || ret_code=$?
+  has_minimum_program_version vault 0.9.0 "$(vault --version)" || ret_code=$?
+  (( rc > 0 )) && exit $ret_code
+
   pushd .
   cd templates/ci
   cat << EOF > settings.yml
