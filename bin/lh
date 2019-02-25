@@ -9,6 +9,23 @@ shopt -s extglob
 
 declare inode_list
 
+has_base_environment="false"
+has_base_type="false"
+
+require_base_type() {
+  if [[ $has_base_type == "false" ]] ;
+  then
+    echo "BASE_TYPE needs to be set in the config file" >&2 && exit 1
+  fi
+}
+
+require_base_env() {
+  if [[ $has_base_environment == "false" ]] ;
+  then
+    echo "BASE_ENV needs to be set in the config file" >&2 && exit 1
+  fi
+}
+
 is_path_in_PATH() {
     declare test_path=${1:?is_path_in_PATH() - no directory given   $(caller 0)}
     [[ ! -d "${test_path}" ]] && return 2 
@@ -45,14 +62,21 @@ initialize_environment() {
     exit 1
   fi
 
+  . ${LH_DIRECTORY}/lib/output.sh
+
+  echo $PATH
+  add_lib_paths_to_PATH
+  echo DEBUG: after add call $PATH
+  echo DEBUG: after add call $inode_list
+
   # read in configuration variables, when the file exits
   # it will not exist in piplines that run containers for example.
-
   if [[ ! "" == "$USE_ENV" ]] ;
   then
     if [[ -s "config.${USE_ENV}.env" ]]
     then
       source "config.${USE_ENV}.env"
+      echo "DEBUG: Sourcing config.${USE_ENV}.env" >&2
     else
       echo "USE_ENV set to '${USE_ENV}' but config.${USE_ENV}.env not found"
     fi
@@ -60,15 +84,10 @@ initialize_environment() {
     [[ -s "config.env" ]] && source "config.env"
   fi
 
-  : ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
-  : ${BASE_ENV:?"BASE_ENV must be set to a value"}
+  : ${BASE_TYPE:?"BASE_TYPE must be set to a value"} && has_base_type="true"
+  : ${BASE_ENV:?"BASE_ENV must be set to a value"} && has_base_environment="true"
 
-  . ${LH_DIRECTORY}/lib/output.sh
 
-  echo $PATH
-  add_lib_paths_to_PATH
-  echo DEBUG: after add call $PATH
-  echo DEBUG: after add call $inode_list
 }
 
 initialize_environment
@@ -98,8 +117,8 @@ declare -A variables=(
 
 declare -A genesis_defaults=( 
   [BOSH_CLIENT]="admin"
-  [CF_API]="safe get secret/exodus/${BASE_ENV}/cf:api_url"
-  [CF_API,type]="command"
+#  [CF_API]="safe get secret/exodus/${BASE_ENV}/cf:api_url"
+#  [CF_API,type]="command"
   [CF_ORG]="system"
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
@@ -126,10 +145,11 @@ declare -A custom_variables=(
 )
 
 declare -A custom_genesis_paths=(
+  [CF_API]="secret/exodus/${BASE_ENV}/cf:api_url"
   [CF_PASSWORD]="${VAULT_PATH}/cf/admin_user:password"
+  [CF_SKIP_SSL_VALIDATION]="secret/exodus/${BASE_ENV}/cf:self-signed"
   [BOSH_CA_CERT]="${VAULT_PATH}/bosh/ssl/ca:certificate"
   [BOSH_CLIENT_SECRET]="${VAULT_PATH}/bosh/users/admin:password"
-
 )
 
 #PCF_with_Vault
@@ -155,6 +175,7 @@ set_variable() {
 
     [[ ${!base_variable} == "replace-me" ]] && {
       declare -gx ${base_variable}=""
+      echo "DEBUG: clearing ${base_variable}"
     }
 
     # look in environment
@@ -200,11 +221,13 @@ set_variable() {
 
       if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" ]]
       then
+	      echo "DDEEBBUUGG: Indirect_var"
         value=$(safe get ${!indirect_variable})
         declare -gx "${base_variable}=${value}"
         return 0
       elif [[ -n "${indirect_path}" ]]
       then
+	      echo "DDEEBBUUGG: Indirect_path"
         value=$(safe get ${indirect_path})
         declare -gx "${base_variable}=${value}"
         return 0
@@ -234,6 +257,7 @@ set_variable() {
 
 setup_environment() {
   declare -i ret_code=0
+
   step "Setting up the environment"
   set_variable BOSH_ALIAS             || ret_code=$?
   set_variable BOSH_CA_CERT           || ret_code=$?
@@ -607,7 +631,7 @@ cf_login() {
 
   info "Setting cf api to ${CF_API}"
 
-  [[ "${LH_CF_SKIP_SSL_VALIDATION}" == "true" ]] || skip_ssl_flag=""
+  [[ "${CF_SKIP_SSL_VALIDATION}" == "1" ]] || skip_ssl_flag=""
   cf api ${skip_ssl_flag} "${CF_API}" 
 
   info "Authenticating to CF as user ${CF_USERNAME}"
@@ -879,20 +903,20 @@ export BOSH_ALIAS="\${BOSH_ALIAS:="replace-me"}"
 
 # export CF_DIAL_TIMEOUT="\${CF_DIAL_TIMEOUT:=180}" # Uncomment if you need for login/usage
 export CF_USERNAME="\${CF_USERNAME:="admin"}"
-export LH_CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:="true"}"
+export CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:="replace-me"}"
 export CF_DOMAIN="\${CF_DOMAIN:="replace-me"}" # OPTIONAL
-export LH_VAULT_CF_PASSWORD_PATH="\${LH_VAULT_CF_PASSWORD_PATH:="replace-me"}" # example: secret/.....
+export VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:="replace-me"}" # example: secret/.....
 export CF_API="\${CF_API:="replace-me"}"
 export CF_ORG="\${CF_ORG:="replace-me"}"
 export CF_SPACE="\${CF_SPACE:="replace-me"}"
-export LH_VAULT_BOSH_CA_CERT_PATH="\${LH_VAULT_BOSH_CA_CERT_PATH:="replace-me"}" # example: secret/.....
+export VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT_PATH:="replace-me"}" # example: secret/.....
 export BOSH_CLIENT="\${BOSH_CLIENT:="replace-me"}"
-export LH_VAULT_BOSH_CLIENT_SECRET_PATH="\${LH_VAULT_BOSH_CLIENT_SECRET_PATH:="replace-me"}" # example: secret/.....
+export VAULT_BOSH_CLIENT_SECRET_PATH="\${VAULT_BOSH_CLIENT_SECRET_PATH:="replace-me"}" # example: secret/.....
 
 EOF
   fi
 
-  echo "Copying template files to ${LH_ENV_NAME}/data/ and ${LH_ENV_NAME}/tests/"
+  echo "Creating paths to ${LH_ENV_NAME}/data/ and ${LH_ENV_NAME}/tests/"
   mkdir -p ${LH_ENV_NAME}/data/cf
   mkdir -p ${LH_ENV_NAME}/data/bosh
   mkdir -p ${LH_ENV_NAME}/data/uaa
@@ -995,6 +1019,8 @@ case "$1" in
 
   login)
     setup_environment
+  #  require_base_type
+  #  require_base_env
     shift
     if help_arg_passed $@; then
       login_usage
