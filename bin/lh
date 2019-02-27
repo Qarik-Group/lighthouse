@@ -7,6 +7,8 @@ shopt -s extglob
   echo -e "Bash version must be  4.X or greater" >&2 && exit 1
 }
 
+# NOTE Cannot move into output.h since is it used before LH_DIRECTORY is defined 
+
 step() {
   cat <<EOF
 
@@ -602,20 +604,40 @@ check_safe() {
 
 # loop through the list of required CLI software.
 
-check_dependencies() {
-  step "Checking software dependencies."
-  local ret_code=0
+declare -A tools=(
+  [jq]="1.5"
+  [jq,command]="jq --version"
+  [vault]="0.9.0"
+  [vault,command]="vault --version"
+  [cf]="6.38"
+  [cf,command]="cf --version"
+  [safe]="0.9.9"
+  [safe,command]="safe --version"
+)
 
-  for cmd in jq cf bosh safe uaa bash vault
+check_dependencies() {
+  local check_list=${1:-interactive}
+  local tool_check_list=" jq cf bosh safe uaa bash vault "
+  local -i ret_code=0
+
+  [[ ${check_list} == "repipe" ]] && tool_check_list=" jq spruce fly vault "
+
+  step "Checking software dependencies."
+
+  for cmd in ${tool_check_list}
   do
     need_command ${cmd} || ret_code=$?
   done
-  (( rc > 0 )) && exit $ret_code
 
-  has_minimum_program_version jq 1.5 "$(jq --version)" || ret_code=$?
-  has_minimum_program_version cf 6.38 "$(cf --version)" || ret_code=$?
-  has_minimum_program_version safe 0.9.9 "$(safe --version 2>&1)" || ret_code=$?
-  has_minimum_program_version vault 0.9.0 "$(vault --version)" || ret_code=$?
+  (( ret_code > 0 )) && exit $ret_code
+
+  for cmd in ${tool_check_list}
+  do
+    [[ -n "${tools[${cmd}]:+check_version}" ]] && {
+      has_minimum_program_version ${cmd} ${tools[${cmd}]} "$(${tools[${cmd},command]} 2>&1)" || ret_code=$?
+  }
+  done
+
   (( ret_code == 0 )) && echo -e "\nOK\n"
   return $ret_code
 }
@@ -747,15 +769,9 @@ run_individual_test() {
 repipe() {
   local ret_code=0
 
+  check_dependencies repipe
+
   step "Generating pipeline files."
-  for cmd in jq spruce fly vault
-  do
-    need_command ${cmd} || ret_code=$?
-  done
-  has_minimum_program_version jq 1.5 "$(jq --version)" || ret_code=$?
-  has_minimum_program_version spruce 0.14.0 "$(spruce --version)" || ret_code=$?
-  has_minimum_program_version vault 0.9.0 "$(vault --version)" || ret_code=$?
-  (( rc > 0 )) && exit $ret_code
 
   pushd .
   cd templates/ci
@@ -875,52 +891,63 @@ enable_lh_trace() {
 # teach a man to CLI
 
 check_usage() {
+  declare rc=${1:-1}
+  echo "Usage: $0 login"
   echo "TODO"
   echo "TODO"
   echo "TODO"
-  exit 1
+  exit ${rc}
 }
 
 login_usage() {
+  declare rc=${1:-1}
+  echo "Usage: $0 login"
   echo "TODO"
   echo "TODO"
   echo "TODO"
-  exit 1
+  exit ${rc}
 }
 
 logout_usage(){
+  declare rc=${1:-1}
+  echo "Usage: $0 logout"
   echo "TODO"
   echo "TODO"
   echo "TODO"
-  exit 1
+  exit ${rc}
 }
 
 test_usage() {
-  echo "       test: run all tests."
+  declare rc=${1:-1}
+  echo "Usage: $0 test  environment"
+  echo "  run all tests."
   echo "  test bosh: only the bosh tests."
   echo "    test cf: only cloud foundry tests."
-  exit 1
+  exit ${rc}
 }
 
 run_usage() {
-  echo "Usage: ${0} [options] path1 [path2] [path3] ... [pathN]"
+  declare rc=${1:-1}
+  echo "Usage: $0 run [options] path1 [path2] [path3] ... [pathN]"
   echo "  Takes one or more paths to test scripts and runs them if possible."
   echo "  The path will be 'group/test.sh' such as 'cf/orgs.sh'"
   echo "  Will login to each component unless instructed otherwise."
   echo "  Options:"
   echo "    -s: skip login to bosh, cf, and uaa."
-  exit 1
+  exit ${rc}
 }
 
 new_usage() {
-  echo "Usage: ${0} new environment"
+  declare rc=${1:-1}
+  echo "Usage: $0 new environment"
   echo "  Create a config.environment.env and copy over the data files to the environment subdirectory"
-  exit 1
+  exit ${rc}
 }
 init_usage() {
+  declare rc=${1:-1}
   echo "Usage: ${0} init"
   echo "  Create a directory and copy over the data files to the default"
-  exit 1
+  exit ${rc}
 }
 
 usage() {
@@ -950,23 +977,26 @@ do
       shift
       enable_lh_debug
       ;;
-    help|-h|--help)
-      shift
-      usage 0
-      ;;
     -t)
       shift
       enable_lh_trace
       ;;
+    help|-h|--help)
+      shift
+      usage 0
+      ;;
     new)
       shift
+      if help_arg_passed $@; then
+        new_usage 0
+      fi
       if [[ $# -lt 1 ]] ; then new_usage ; fi
       new_env $1
       ;;
     check)
       shift
       if help_arg_passed $@; then
-        check_usage
+        check_usage 0
       fi
       while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -1012,6 +1042,9 @@ do
       ;;
     init)
       shift
+      if help_arg_passed $@; then
+        init_usage 0
+      fi
       if [[ $# -lt 1 ]] ; then init_usage ; fi
       do_init $1
       ;;
@@ -1040,7 +1073,7 @@ do
     login)
       shift
       if help_arg_passed $@; then
-        login_usage
+        login_usage 0
       fi
       while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -1073,7 +1106,7 @@ do
     logout)
       shift
       if help_arg_passed $@; then
-        logout_usage
+        logout_usage 0
       fi
       while [[ $# -gt 0 ]]; do
         case "$1" in           
@@ -1106,7 +1139,7 @@ do
     test)
       shift
       if help_arg_passed $@; then
-        test_usage
+        test_usage 0
       fi
       # If no args, run all tests
       if [[ $# -eq 0 ]]; then
@@ -1131,13 +1164,16 @@ do
       ;;
     run)
       shift
+      if help_arg_passed $@; then
+        run_usage 0
+      fi
       skip_login_arg_passed $@
       skip_login=$?
 
       # if no args are passed, only the skip login is passed, or the help arg is passed
-      if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]] || help_arg_passed $@; then
-            run_usage
-        fi
+      if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]]; then
+        run_usage
+      fi
         while [[ $# -gt 0 ]]; do
           case "$1" in
             -s) # already captured so ignore
@@ -1159,7 +1195,6 @@ do
       ;;
     repipe)
       shift
-      setup_environment
       repipe
       ;;
     *)
