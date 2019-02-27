@@ -7,24 +7,17 @@ shopt -s extglob
   echo -e "Bash version must be  4.X or greater" >&2 && exit 1
 }
 
+step() {
+  cat <<EOF
+
+==\\\\
+====>  $@
+==//
+
+EOF
+}
+
 declare inode_list
-
-has_base_environment="false"
-has_base_type="false"
-
-require_base_type() {
-  if [[ $has_base_type == "false" ]] ;
-  then
-    echo "BASE_TYPE needs to be set in the config file" >&2 && exit 1
-  fi
-}
-
-require_base_env() {
-  if [[ $has_base_environment == "false" ]] ;
-  then
-    echo "BASE_ENV needs to be set in the config file" >&2 && exit 1
-  fi
-}
 
 is_path_in_PATH() {
     declare test_path=${1:?is_path_in_PATH() - no directory given   $(caller 0)}
@@ -64,35 +57,8 @@ initialize_environment() {
 
   . ${LH_DIRECTORY}/lib/output.sh
 
-  echo $PATH
   add_lib_paths_to_PATH
-  echo DEBUG: after add call $PATH
-  echo DEBUG: after add call $inode_list
-
-  # read in configuration variables, when the file exits
-  # it will not exist in piplines that run containers for example.
-  if [[ ! "" == "$USE_ENV" ]] ;
-  then
-    if [[ -s "config.${USE_ENV}.env" ]]
-    then
-      source "config.${USE_ENV}.env"
-      echo "DEBUG: Sourcing config.${USE_ENV}.env" >&2
-    else
-      echo "USE_ENV set to '${USE_ENV}' but config.${USE_ENV}.env not found"
-    fi
-  else
-    [[ -s "config.env" ]] && source "config.env"
-  fi
-
-  : ${BASE_TYPE:?"BASE_TYPE must be set to a value"} && has_base_type="true"
-  : ${BASE_ENV:?"BASE_ENV must be set to a value"} && has_base_environment="true"
-
-
 }
-
-initialize_environment
-echo DEBUG: after initialize call $PATH
-echo DEBUG: after initialize call $inode_list
 
 # Beginning of function definitions
 
@@ -117,21 +83,21 @@ declare -A variables=(
 
 declare -A genesis_defaults=( 
   [BOSH_CLIENT]="admin"
-#  [CF_API]="safe get secret/exodus/${BASE_ENV}/cf:api_url"
+#  [CF_API]="safe get secret/exodus/\${BASE_ENV}/cf:api_url"
 #  [CF_API,type]="command"
   [CF_ORG]="system"
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
-  [BOSH_ALIAS]="${BASE_ENV}"
-  [BOSH_ENVIRONMENT]="${BASE_ENV}"
-  [BOSH_IP]="safe get secret/exodus/${BASE_ENV}/bosh:url"
+  [BOSH_ALIAS]="\${BASE_ENV}"
+  [BOSH_ENVIRONMENT]="\${BASE_ENV}"
+  [BOSH_IP]="safe get secret/exodus/\${BASE_ENV}/bosh:url"
   [BOSH_IP,type]="command"
 )
 
 declare -A pcf_vault_defaults=( 
   [BOSH_CLIENT]="admin"
   [CF_DOMAIN]=""
-  [CF_API]="https://api.${CF_DOMAIN}"
+  [CF_API]="https://api.\${CF_DOMAIN}"
   [CF_ORG]="system"
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
@@ -139,24 +105,24 @@ declare -A pcf_vault_defaults=(
 )
 
 declare -A custom_variables=(
-  [CF_PASSWORD]="LH_VAULT_CF_PASSWORD_PATH"
-  [BOSH_CA_CERT]="LH_VAULT_BOSH_CA_CERT_PATH"
-  [BOSH_CLIENT_SECRET]="LH_VAULT_BOSH_CLIENT_SECRET_PATH"
+  [CF_PASSWORD]="VAULT_CF_PASSWORD_PATH"
+  [BOSH_CA_CERT]="VAULT_BOSH_CA_CERT_PATH"
+  [BOSH_CLIENT_SECRET]="VAULT_BOSH_CLIENT_SECRET_PATH"
 )
 
 declare -A custom_genesis_paths=(
-  [CF_API]="secret/exodus/${BASE_ENV}/cf:api_url"
-  [CF_PASSWORD]="${VAULT_PATH}/cf/admin_user:password"
-  [CF_SKIP_SSL_VALIDATION]="secret/exodus/${BASE_ENV}/cf:self-signed"
-  [BOSH_CA_CERT]="${VAULT_PATH}/bosh/ssl/ca:certificate"
-  [BOSH_CLIENT_SECRET]="${VAULT_PATH}/bosh/users/admin:password"
+  [CF_API]="secret/exodus/\${BASE_ENV}/cf:api_url"
+  [CF_PASSWORD]="\${VAULT_PATH}/cf/admin_user:password"
+  [CF_SKIP_SSL_VALIDATION]="secret/exodus/\${BASE_ENV}/cf:self-signed"
+  [BOSH_CA_CERT]="\${VAULT_PATH}/bosh/ssl/ca:certificate"
+  [BOSH_CLIENT_SECRET]="\${VAULT_PATH}/bosh/users/admin:password"
 )
 
 #PCF_with_Vault
 declare -A custom_pcf_vault_paths=(
-  [CF_PASSWORD]="${VAULT_PATH}/cf/${BASE_ENV}/password"
-  [BOSH_CA_CERT]="${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CA_CERT"
-  [BOSH_CLIENT_SECRET]="${VAULT_PATH}/bosh/${BASE_ENV}/BOSH_CLIENT_SECRET"
+  [CF_PASSWORD]="\${VAULT_PATH}/cf/\${BASE_ENV}/password"
+  [BOSH_CA_CERT]="\${VAULT_PATH}/bosh/\${BASE_ENV}/BOSH_CA_CERT"
+  [BOSH_CLIENT_SECRET]="\${VAULT_PATH}/bosh/\${BASE_ENV}/BOSH_CLIENT_SECRET"
 ) 
 
 set_variable() {
@@ -166,6 +132,7 @@ set_variable() {
     declare base_type=${BASE_TYPE,,}
     declare -nl defaults="${base_type}_defaults"
     declare value
+    declare -a array_value
 
     if [[ -z ${required} ]]; then
         # TODO Do we need custom error messages?
@@ -196,39 +163,19 @@ set_variable() {
       # TODO Can we test if nameref variable reference exists
       declare indirect_path=${custom_paths[${base_variable}]}
 
-      # declare indirect_path
-      # look in vault path
-      # look in genesis path
-      # case ${base_type} in
-        # genesis)
-          # indirect_path=${custom_genesis_paths[${base_variable}]}
-          # ;;
-        # pcf_vault)
-          # indirect_path=${custom_vault_paths[${base_variable}]}
-          # ;;
-        # ocf_vault|pcf_om)
-          # echo "BASE_TYPE value \"${BASE_TYPE}\" is not yet implemented"  >&2
-          # return 2
-          # ;;
-        # *)
-          # echo "BASE_TYPE value \"${BASE_TYPE}\" is not a valid value"  >&2
-          # return 2
-          # ;;
-      # esac
-
       echo "DEBUG: indirect_variable ${indirect_variable}"
       echo "DEBUG: indirect_path ${indirect_path}"
 
       if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" ]]
       then
-	      echo "DDEEBBUUGG: Indirect_var"
-        value=$(safe get ${!indirect_variable})
+        declare -a "array_value=("safe" "get" ${!indirect_variable})"
+        value=$(${array_value[@]})
         declare -gx "${base_variable}=${value}"
         return 0
       elif [[ -n "${indirect_path}" ]]
       then
-	      echo "DDEEBBUUGG: Indirect_path"
-        value=$(safe get ${indirect_path})
+        declare -a "array_value=("safe" "get" ${indirect_path})"
+        value=$(${array_value[@]})
         declare -gx "${base_variable}=${value}"
         return 0
       else
@@ -248,15 +195,33 @@ set_variable() {
       return 1
       
     }
-    value="${defaults[${base_variable}]}"
+    declare -a "array_value=(${defaults[${base_variable}]})"
+    value="${array_value[@]}"
     [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
-
-    declare -gx "${base_variable}=${value}"
+    declare -gx "${base_variable}=${value[@]}"
     return 0
   }
 
 setup_environment() {
   declare -i ret_code=0
+
+  # read in configuration variables, when the file exits
+  # it will not exist in piplines that run containers for example.
+  if [[ ! "" == "$USE_ENV" ]] ;
+  then
+    if [[ -s "config.${USE_ENV}.env" ]]
+    then
+      source "config.${USE_ENV}.env"
+      echo "DEBUG: Sourcing config.${USE_ENV}.env" >&2
+    else
+      echo "USE_ENV set to '${USE_ENV}' but config.${USE_ENV}.env not found"
+    fi
+  else
+    [[ -s "config.env" ]] && source "config.env"
+  fi
+
+  : ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
+  : ${BASE_ENV:?"BASE_ENV must be set to a value"}
 
   step "Setting up the environment"
   set_variable BOSH_ALIAS             || ret_code=$?
@@ -469,13 +434,6 @@ has_minimum_program_version() {
   return 0
 }
 
-set_env() {
-  # take an environment name as a parameter
-  # create a template configuration file in the envs folder
-  # output to the user where the file is
-  echo "love is ${2}"
-}
-
 find_included_path() {
   test_path=$1
   if [[ -f "${USE_ENV}/tests/${test_path}" ]]; then
@@ -541,11 +499,9 @@ component_test() {
 }
 
 help_arg_passed() {
-  inputs=("$@")
-  for i in "${inputs[@]}"; do
-    if [[ "${i}" == "-h" || "${i}" == "--help" || "${i}" == "help" ]]; then
-      return 0
-    fi
+  for i in ${@}
+  do
+    [[ "${i}" == "-h" || "${i}" == "--help" || "${i}" == "help" ]] && return 0
   done
   return 1
 }
@@ -558,30 +514,6 @@ skip_login_arg_passed() {
     fi
   done
   return 1
-}
-
-set_vaule() {
-
-  lh_value_name=$1
-
-  RESULT=""
-
-  if [[ "$lh_value_name" != "" ]]
-  then
-    lh_value_contained=$(echo "${${lh_value_name}}")
-    debug "LH_contained ${lh_value_contained}"
-    if [[ "$lh_value_contained" != "" ]]
-    then
-      RESULT=${lh_value_contained}
-    else
-      fail "Value \"$lh_value_name\" is empty but required.  Please verify it's set"
-    fi
-  else
-    fail "Variable name missing"
-  fi
-
-  debug "RESULT=\"$RESULT\""
-  echo "$RESULT"
 }
 
 bosh_login() {
@@ -682,7 +614,7 @@ check_dependencies() {
 
   has_minimum_program_version jq 1.5 "$(jq --version)" || ret_code=$?
   has_minimum_program_version cf 6.38 "$(cf --version)" || ret_code=$?
-  has_minimum_program_version safe 0.9.9 "$(safe --version)" || ret_code=$?
+  has_minimum_program_version safe 0.9.9 "$(safe --version 2>&1)" || ret_code=$?
   has_minimum_program_version vault 0.9.0 "$(vault --version)" || ret_code=$?
   (( ret_code == 0 )) && echo -e "\nOK\n"
   return $ret_code
@@ -769,8 +701,10 @@ uaa_logout() {
 # top level commands
 
 check() {
-  check_dependencies
-  check_safe
+  declare rc=0
+  check_dependencies || rc=$?
+  check_safe || rc=$?
+  return $rc
 }
 
 login() {
@@ -990,6 +924,7 @@ init_usage() {
 }
 
 usage() {
+  declare rc=${1:-1}
   echo "Lighthouse, near friendly shores."
   echo "  login  -- sign into vault with safe, then BOSH and CF with vault."
   echo "  logout -- logout of safe, BOSH and CF."
@@ -1000,199 +935,237 @@ usage() {
   echo "  init   -- Create config directory for addding lighthouse environment"
   echo "  new    -- Create config for lighthouse environment after init"
   echo "  import -- Collect information for non-Genesis environments"
-  exit 1
+  exit ${rc}
 }
 # End of function definition section
 
-(( $# > 0 )) || usage # First line of main code
+(( $# > 0 )) || usage
 
+# process commands that do require variable initialization
 
-case "$1" in
-  -d)
-    shift
-    enable_lh_debug
-    ;;
-  -t)
-    shift
-    enable_lh_trace
-    ;;
-
-  login)
-    setup_environment
-  #  require_base_type
-  #  require_base_env
-    shift
-    if help_arg_passed $@; then
-      login_usage
-    fi
-    while [[ $# -gt 0 ]]; do
-      case "$1" in
-        bosh)
-          bosh_login
-          exit 0
-          ;;
-        cf)
-          cf_login
-          exit 0
-          ;;
-        safe)
-          safe_login
-          exit 0
-          ;;
-        uaa)
-          uaa_login
-          exit 0
-          ;;
-        *)
-          echo "Unrecognized argument: '${1}'"
-          login_usage
-          exit 1
-          ;;
-      esac
+while (( $# > 0 ))
+do
+  case "$1" in
+    -d)
       shift
-    done
-    login "$@"
-    ;;
-  logout)
-    setup_environment
-    shift
-    if help_arg_passed $@; then
-      logout_usage
-    fi
-    while [[ $# -gt 0 ]]; do
-      case "$1" in           
-        bosh)
-          bosh_logout
-          exit 0
-          ;;
-        cf)
-          cf_logout
-          exit 0
-          ;;
-        safe)
-          safe_logout
-          exit 0
-          ;;
-        uaa)
-          uaa_logout
-          exit 0
-          ;;
-        *)
-          echo "Unrecognized argument: '${1}'"
-          logout_usage
-          exit 1
-          ;;
-      esac
+      enable_lh_debug
+      ;;
+    help|-h|--help)
       shift
-    done
-    logout "$@"
-    ;;
-  test)
-    setup_environment
-    shift
-    if help_arg_passed $@; then
-      test_usage
-    fi
-    # If no args, run all tests
-    if [[ $# -eq 0 ]]; then
-      for i in "bosh" "cf" "uaa"; do
-        component_test "${i}"
-      done
-    else
+      usage 0
+      ;;
+    -t)
+      shift
+      enable_lh_trace
+      ;;
+    new)
+      shift
+      if [[ $# -lt 1 ]] ; then new_usage ; fi
+      new_env $1
+      ;;
+    check)
+      shift
+      if help_arg_passed $@; then
+        check_usage
+      fi
       while [[ $# -gt 0 ]]; do
         case "$1" in
-          cf|bosh|uaa)
-            component_test "${1}"
+          dependencies)
+            check_dependencies
+            exit $?
+            ;;
+          safe)
+            check_safe
+            exit $?
             ;;
           *)
             echo "Unrecognized argument: '${1}'"
-            test_usage
+            check_usage
             exit 1
             ;;
         esac
         shift
       done
-    fi
-    ;;
-  set-env)
-    if help_arg_passed $@; then
-      set_env_usage
-    fi
-    set_env "$@"
-    ;;
-  check)
-    shift
-    if help_arg_passed $@; then
-      check_usage
-    fi
-    while [[ $# -gt 0 ]]; do
-      case "$1" in
-        dependencies)
-          check_dependencies
-          exit 0
-          ;;
-        safe)
-          check_safe
-          exit 0
-          ;;
-        *)
-          echo "Unrecognized argument: '${1}'"
-          check_usage
-          exit 1
-          ;;
-      esac
-      shift
-    done
-    check "$@"
-    ;;
-  run)
-    shift
-    setup_environment
-    skip_login_arg_passed $@
-    skip_login=$?
+      check "$@"
+      exit $?
+      ;;
+    *) 
+      break
+      ;;
+  esac
+done
 
-    # if no args are passed, only the skip login is passed, or the help arg is passed
-    if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]] || help_arg_passed $@; then
-          run_usage
+(( $# > 0 )) || usage 
+
+initialize_environment
+
+while (( $# > 0 ))
+do
+  case "$1" in
+    -d)
+      shift
+      enable_lh_debug
+      ;;
+    -t)
+      shift
+      enable_lh_trace
+      ;;
+    init)
+      shift
+      if [[ $# -lt 1 ]] ; then init_usage ; fi
+      do_init $1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+(( $# > 0 )) || usage 
+
+setup_environment
+
+while (( $# > 0 ))
+do
+  case "$1" in
+    -d)
+      shift
+      enable_lh_debug
+      ;;
+    -t)
+      shift
+      enable_lh_trace
+      ;;
+
+    login)
+      shift
+      if help_arg_passed $@; then
+        login_usage
       fi
       while [[ $# -gt 0 ]]; do
         case "$1" in
-          -s) # already captured so ignore
-            shift
-            continue
+          bosh)
+            bosh_login
+            exit 0
+            ;;
+          cf)
+            cf_login
+            exit 0
+            ;;
+          safe)
+            safe_login
+            exit 0
+            ;;
+          uaa)
+            uaa_login
+            exit 0
             ;;
           *)
-            echo "Running test $1"
-            run_individual_test "$1"
+            echo "Unrecognized argument: '${1}'"
+            login_usage
+            exit 1
             ;;
         esac
         shift
       done
-      [[ "${skip_login}" -ne 0 ]] && logout
-    ;;
-  import)
-    shift
-    env_import
-    ;;
-  new)
-    shift
-    if [[ $# -lt 1 ]] ; then new_usage ; fi
-    new_env $1
-    ;;
-  init)
-    shift
-    if [[ $# -lt 1 ]] ; then init_usage ; fi
-    do_init $1
-    ;;
-  repipe)
-    shift
-    setup_environment
-    repipe
-    ;;
-  *)
-    usage
-    exit 1
-    ;;
-esac
+      login "$@"
+      ;;
+    logout)
+      shift
+      if help_arg_passed $@; then
+        logout_usage
+      fi
+      while [[ $# -gt 0 ]]; do
+        case "$1" in           
+          bosh)
+            bosh_logout
+            exit 0
+            ;;
+          cf)
+            cf_logout
+            exit 0
+            ;;
+          safe)
+            safe_logout
+            exit 0
+            ;;
+          uaa)
+            uaa_logout
+            exit 0
+            ;;
+          *)
+            echo "Unrecognized argument: '${1}'"
+            logout_usage
+            exit 1
+            ;;
+        esac
+        shift
+      done
+      logout "$@"
+      ;;
+    test)
+      shift
+      if help_arg_passed $@; then
+        test_usage
+      fi
+      # If no args, run all tests
+      if [[ $# -eq 0 ]]; then
+        for i in "bosh" "cf" "uaa"; do
+          component_test "${i}"
+        done
+      else
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            cf|bosh|uaa)
+              component_test "${1}"
+              ;;
+            *)
+              echo "Unrecognized argument: '${1}'"
+              test_usage
+              exit 1
+              ;;
+          esac
+          shift
+        done
+      fi
+      ;;
+    run)
+      shift
+      skip_login_arg_passed $@
+      skip_login=$?
+
+      # if no args are passed, only the skip login is passed, or the help arg is passed
+      if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]] || help_arg_passed $@; then
+            run_usage
+        fi
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            -s) # already captured so ignore
+              shift
+              continue
+              ;;
+            *)
+              echo "Running test $1"
+              run_individual_test "$1"
+              ;;
+          esac
+          shift
+        done
+        [[ "${skip_login}" -ne 0 ]] && logout
+      ;;
+    import)
+      shift
+      env_import
+      ;;
+    repipe)
+      shift
+      setup_environment
+      repipe
+      ;;
+    *)
+      usage
+      ;;
+  esac
+done
 
 exit $?
