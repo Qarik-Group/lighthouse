@@ -961,7 +961,6 @@ usage() {
   echo "  repipe -- create pipeline for tests"
   echo "  init   -- Create config directory for addding lighthouse environment"
   echo "  new    -- Create config for lighthouse environment after init"
-  echo "  import -- Collect information for non-Genesis environments"
   exit ${rc}
 }
 # End of function definition section
@@ -1188,10 +1187,6 @@ do
           shift
         done
         [[ "${skip_login}" -ne 0 ]] && logout
-      ;;
-    import)
-      shift
-      env_import
       ;;
     repipe)
       shift
