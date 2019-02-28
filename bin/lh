@@ -853,15 +853,15 @@ export BOSH_ALIAS="\${BOSH_ALIAS:="replace-me"}"
 
 # export CF_DIAL_TIMEOUT="\${CF_DIAL_TIMEOUT:=180}" # Uncomment if you need for login/usage
 export CF_USERNAME="\${CF_USERNAME:="admin"}"
-export CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:="replace-me"}"
+export CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:=""}"
 export CF_DOMAIN="\${CF_DOMAIN:="replace-me"}" # OPTIONAL
-export VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:="replace-me"}" # example: secret/.....
+export VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:=""}" # example: secret/.....
 export CF_API="\${CF_API:="replace-me"}"
 export CF_ORG="\${CF_ORG:="replace-me"}"
 export CF_SPACE="\${CF_SPACE:="replace-me"}"
-export VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT_PATH:="replace-me"}" # example: secret/.....
+export VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT_PATH:=""}" # example: secret/.....
 export BOSH_CLIENT="\${BOSH_CLIENT:="replace-me"}"
-export VAULT_BOSH_CLIENT_SECRET_PATH="\${VAULT_BOSH_CLIENT_SECRET_PATH:="replace-me"}" # example: secret/.....
+export VAULT_BOSH_CLIENT_SECRET_PATH="\${VAULT_BOSH_CLIENT_SECRET_PATH:=""}" # example: secret/.....
 
 EOF
   fi
