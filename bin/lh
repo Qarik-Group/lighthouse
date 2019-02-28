@@ -25,7 +25,7 @@ is_path_in_PATH() {
     declare test_path=${1:?is_path_in_PATH() - no directory given   $(caller 0)}
     [[ ! -d "${test_path}" ]] && return 2 
     read path_inode rest < <(ls -idH "${test_path}") #grr subshells
-    echo ${path_inode}
+    echo "${path_inode}"
     [[ ":$PATH:" == *":${test_path}:"* ]]
 }
 
@@ -138,7 +138,7 @@ set_variable() {
 
     if [[ -z ${required} ]]; then
         # TODO Do we need custom error messages?
-        echo ${display_name} is not defined in the variables table >&2
+        echo "${display_name} is not defined in the variables table" >&2
         return 2
     fi
 
@@ -398,7 +398,7 @@ need_command() {
 }
 
 extract_version() {
-  declare line={$1:?"extract_version() Missing search string $(caller 0)"}
+  declare line=${1:?"extract_version() Missing search string $(caller 0)"}
   [[ "${line}" =~ ([[:digit:]]+(\.[[:digit:]]+){1,2}) ]]
 }
 
@@ -437,7 +437,7 @@ has_minimum_program_version() {
 }
 
 find_included_path() {
-  test_path=$1
+  test_path="$1"
   if [[ -f "${USE_ENV}/tests/${test_path}" ]]; then
     echo "${USE_ENV}/tests/${test_path}"
   elif [[ -f "tests/${test_path}" ]]; then
@@ -452,7 +452,7 @@ find_included_path() {
 }
 
 find_test_path() {
-  test_path=$1
+  test_path="$1"
   if [[ -x "${USE_ENV}/tests/${test_path}" ]]; then
     echo "${USE_ENV}/tests/${test_path}"
   elif [[ -x "tests/${test_path}" ]]; then
@@ -501,7 +501,7 @@ component_test() {
 }
 
 help_arg_passed() {
-  for i in ${@}
+  for i in "${@}"
   do
     [[ "${i}" == "-h" || "${i}" == "--help" || "${i}" == "help" ]] && return 0
   done
@@ -617,16 +617,16 @@ declare -A tools=(
 
 check_dependencies() {
   local check_list=${1:-interactive}
-  local tool_check_list=" jq cf bosh safe uaa bash vault "
+  local tool_check_list="jq cf bosh safe uaa bash vault"
   local -i ret_code=0
 
-  [[ ${check_list} == "repipe" ]] && tool_check_list=" jq spruce fly vault "
+  [[ "${check_list}" == "repipe" ]] && tool_check_list="jq spruce fly vault"
 
   step "Checking software dependencies."
 
   for cmd in ${tool_check_list}
   do
-    need_command ${cmd} || ret_code=$?
+    need_command "${cmd}" || ret_code=$?
   done
 
   (( ret_code > 0 )) && exit $ret_code
@@ -634,7 +634,7 @@ check_dependencies() {
   for cmd in ${tool_check_list}
   do
     [[ -n "${tools[${cmd}]:+check_version}" ]] && {
-      has_minimum_program_version ${cmd} ${tools[${cmd}]} "$(${tools[${cmd},command]} 2>&1)" || ret_code=$?
+      has_minimum_program_version "${cmd}" "${tools[${cmd}]}" "$(${tools[${cmd},command]} 2>&1)" || ret_code=$?
   }
   done
 
@@ -802,7 +802,7 @@ popd
 }
 
 do_init() {
-  new_directory=$1
+  new_directory="$1"
   echo "Creating directory ${new_directory}"
   mkdir ${new_directory}
   cp -Riv ${LH_DIRECTORY}/templates/data ${new_directory}/
@@ -811,7 +811,7 @@ do_init() {
 }
 
 new_env() {
-  LH_ENV_NAME=$1
+  LH_ENV_NAME="$1"
 
   if [[ -e "config.${LH_ENV_NAME}.env" ]]
   then
@@ -987,15 +987,15 @@ do
       ;;
     new)
       shift
-      if help_arg_passed $@; then
+      if help_arg_passed "$@"; then
         new_usage 0
       fi
       if [[ $# -lt 1 ]] ; then new_usage ; fi
-      new_env $1
+      new_env "$1"
       ;;
     check)
       shift
-      if help_arg_passed $@; then
+      if help_arg_passed "$@"; then
         check_usage 0
       fi
       while [[ $# -gt 0 ]]; do
@@ -1042,7 +1042,7 @@ do
       ;;
     init)
       shift
-      if help_arg_passed $@; then
+      if help_arg_passed "$@"; then
         init_usage 0
       fi
       if [[ $# -lt 1 ]] ; then init_usage ; fi
@@ -1072,7 +1072,7 @@ do
 
     login)
       shift
-      if help_arg_passed $@; then
+      if help_arg_passed "$@"; then
         login_usage 0
       fi
       while [[ $# -gt 0 ]]; do
@@ -1105,7 +1105,7 @@ do
       ;;
     logout)
       shift
-      if help_arg_passed $@; then
+      if help_arg_passed "$@"; then
         logout_usage 0
       fi
       while [[ $# -gt 0 ]]; do
@@ -1138,7 +1138,7 @@ do
       ;;
     test)
       shift
-      if help_arg_passed $@; then
+      if help_arg_passed "$@"; then
         test_usage 0
       fi
       # If no args, run all tests
@@ -1164,7 +1164,7 @@ do
       ;;
     run)
       shift
-      if help_arg_passed $@; then
+      if help_arg_passed "$@"; then
         run_usage 0
       fi
       skip_login_arg_passed $@
