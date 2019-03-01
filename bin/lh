@@ -770,77 +770,116 @@ enable_lh_trace() {
 
 check_usage() {
   declare rc=${1:-1}
-  echo "Usage: $0 login"
+  declare return_by=${2:-"exit"}
+  echo "Usage: $0 check"
   echo "TODO"
   echo "TODO"
   echo "TODO"
-  exit ${rc}
+  ${return_by} ${rc}
 }
 
 login_usage() {
   declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
   echo "Usage: $0 login"
   echo "TODO"
   echo "TODO"
   echo "TODO"
-  exit ${rc}
+  ${return_by} ${rc}
 }
 
 logout_usage(){
   declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
   echo "Usage: $0 logout"
   echo "TODO"
   echo "TODO"
   echo "TODO"
-  exit ${rc}
+  ${return_by} ${rc}
 }
 
 test_usage() {
   declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
   echo "Usage: $0 test  environment"
   echo "  run all tests."
   echo "  test bosh: only the bosh tests."
   echo "    test cf: only cloud foundry tests."
-  exit ${rc}
+  ${return_by} ${rc}
 }
 
 run_usage() {
   declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
   echo "Usage: $0 run [options] path1 [path2] [path3] ... [pathN]"
   echo "  Takes one or more paths to test scripts and runs them if possible."
   echo "  The path will be 'group/test.sh' such as 'cf/orgs.sh'"
   echo "  Will login to each component unless instructed otherwise."
   echo "  Options:"
   echo "    -s: skip login to bosh, cf, and uaa."
-  exit ${rc}
+  ${return_by} ${rc}
 }
 
 new_usage() {
   declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
   echo "Usage: $0 new environment"
   echo "  Create a config.environment.env and copy over the data files to the environment subdirectory"
-  exit ${rc}
+  ${return_by} ${rc}
 }
 init_usage() {
   declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
   echo "Usage: ${0} init"
   echo "  Create a directory and copy over the data files to the default"
-  exit ${rc}
+  ${return_by} ${rc}
 }
 
 usage() {
   declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
   echo "Lighthouse, near friendly shores."
+  echo "  check  -- check for dependencies or signed in."
+  echo "  init   -- Create config directory for addding lighthouse environment"
   echo "  login  -- sign into vault with safe, then BOSH and CF with vault."
   echo "  logout -- logout of safe, BOSH and CF."
-  echo "  check  -- check for dependencies or signed in."
-  echo "  test   -- run all tests."
-  echo "  run    -- run a specific test or set of tests."
-  echo "  repipe -- create pipeline for tests"
-  echo "  init   -- Create config directory for addding lighthouse environment"
   echo "  new    -- Create config for lighthouse environment after init"
-  exit ${rc}
+  echo "  repipe -- create pipeline for tests"
+  echo "  run    -- run a specific test or set of tests."
+  echo "  test   -- run all tests."
+  ${return_by} ${rc}
 }
+
+declare -A usages=(
+  [check]="check_usage"
+  [init]="init_usage"
+  [login]="login_usage"
+  [logout]="logout_usage"
+  [new]="new_usage"
+  [repipe]="repipe_usage"
+  [run]="run_usage"
+  [test]="test_usage"
+  [help]="usage"
+)
+
+do_help_cmd() {
+  local rc=0
+  for cmd in "$@"
+  do
+    if [[ -n "${usages[${cmd}]:+has_usage}" ]]
+    then
+      ${usages[${cmd}]} 0 return
+    else
+      echo "${cmd}: no such command exists"
+      (( rc < 1 )) && usage
+      rc=1
+    fi
+    echo
+  done
+  (( $# < 1 )) && usage 0
+  exit "${rc}"
+}
+
 # End of function definition section
 
 (( $# > 0 )) || usage
@@ -860,7 +899,7 @@ do
       ;;
     help|-h|--help)
       shift
-      usage 0
+      do_help_cmd "$@"
       ;;
     new)
       shift
@@ -888,7 +927,6 @@ do
           *)
             echo "Unrecognized argument: '${1}'"
             check_usage
-            exit 1
             ;;
         esac
         shift
@@ -904,6 +942,10 @@ done
 
 (( $# > 0 )) || usage 
 
+if help_arg_passed "$@"; then
+  do_help_cmd $1
+fi
+
 # Process commands that only need LH_DIRECTORY set
 
 initialize_environment
@@ -913,9 +955,6 @@ do
   case "$1" in
     init)
       shift
-      if help_arg_passed "$@"; then
-        init_usage 0
-      fi
       if [[ $# -lt 1 ]] ; then init_usage ; fi
       do_init $1
       ;;
@@ -936,9 +975,6 @@ do
   case "$1" in
     login)
       shift
-      if help_arg_passed "$@"; then
-        login_usage 0
-      fi
       while [[ $# -gt 0 ]]; do
         case "$1" in
           bosh)
@@ -960,7 +996,6 @@ do
           *)
             echo "Unrecognized argument: '${1}'"
             login_usage
-            exit 1
             ;;
         esac
         shift
@@ -969,9 +1004,6 @@ do
       ;;
     logout)
       shift
-      if help_arg_passed "$@"; then
-        logout_usage 0
-      fi
       while [[ $# -gt 0 ]]; do
         case "$1" in           
           bosh)
@@ -993,7 +1025,6 @@ do
           *)
             echo "Unrecognized argument: '${1}'"
             logout_usage
-            exit 1
             ;;
         esac
         shift
@@ -1002,9 +1033,6 @@ do
       ;;
     test)
       shift
-      if help_arg_passed "$@"; then
-        test_usage 0
-      fi
       # If no args, run all tests
       if [[ $# -eq 0 ]]; then
         for i in "bosh" "cf" "uaa"; do
@@ -1019,7 +1047,6 @@ do
             *)
               echo "Unrecognized argument: '${1}'"
               test_usage
-              exit 1
               ;;
           esac
           shift
@@ -1028,9 +1055,6 @@ do
       ;;
     run)
       shift
-      if help_arg_passed "$@"; then
-        run_usage 0
-      fi
       skip_login_arg_passed $@
       skip_login=$?
 
