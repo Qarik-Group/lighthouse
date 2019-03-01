@@ -166,7 +166,7 @@ set_variable() {
       echo "DEBUG: indirect_variable ${indirect_variable}"
       echo "DEBUG: indirect_path ${indirect_path}"
 
-      if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" ]]
+      if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" && "${!indirect_variable}" != "replace-me"  ]]
       then
         declare -a "array_value=("safe" "get" ${!indirect_variable})"
         value=$(${array_value[@]})
@@ -736,10 +736,10 @@ export CF_ORG="\${CF_ORG:="replace-me"}"
 export CF_SPACE="\${CF_SPACE:="replace-me"}"
 export BOSH_CLIENT="\${BOSH_CLIENT:="replace-me"}"
 # 
-export CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:=""}"
-export VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:=""}" # example: secret/.....
-export VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT_PATH:=""}" # example: secret/.....
-export VAULT_BOSH_CLIENT_SECRET_PATH="\${VAULT_BOSH_CLIENT_SECRET_PATH:=""}" # example: secret/.....
+export CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:="replace-me"}"
+export VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:="replace-me"}" # example: secret/.....
+export VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT_PATH:="replace-me"}" # example: secret/.....
+export VAULT_BOSH_CLIENT_SECRET_PATH="\${VAULT_BOSH_CLIENT_SECRET_PATH:="replace-me"}" # example: secret/.....
 
 EOF
   fi
@@ -940,8 +940,8 @@ do
       check "$@"
       exit $?
       ;;
-    *) 
-      break
+    *)
+      break;
       ;;
   esac
 done
@@ -961,9 +961,6 @@ case "$1" in
     shift
     if [[ $# -lt 1 ]] ; then init_usage ; fi
     do_init $1
-    ;;
-  *)
-    break
     ;;
 esac
 
