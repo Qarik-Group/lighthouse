@@ -613,7 +613,7 @@ declare -A tools=(
 )
 
 check_dependencies() {
-  local check_list=${1:-interactive}
+  local check_list=${1:-"interactive"}
   local tool_check_list="jq cf bosh safe uaa bash vault"
   local -i ret_code=0
 
@@ -631,7 +631,9 @@ check_dependencies() {
   for cmd in ${tool_check_list}
   do
     [[ -n "${tools[${cmd}]:+check_version}" ]] && {
-      has_minimum_program_version "${cmd}" "${tools[${cmd}]}" "$(${tools[${cmd},command]} 2>&1)" || ret_code=$?
+      local version="${tools[${cmd}]}" 
+      local cmd="${tools[${cmd},command]}" 
+      has_minimum_program_version "${cmd}" "${version}" "$(${cmd} 2>&1)" || ret_code=$?
   }
   done
 
@@ -1024,19 +1026,13 @@ done
 
 (( $# > 0 )) || usage 
 
+# Process commands that only need LH_DIRECTORY set
+
 initialize_environment
 
 while (( $# > 0 ))
 do
   case "$1" in
-    -d)
-      shift
-      enable_lh_debug
-      ;;
-    -t)
-      shift
-      enable_lh_trace
-      ;;
     init)
       shift
       if help_arg_passed "$@"; then
@@ -1053,20 +1049,13 @@ done
 
 (( $# > 0 )) || usage 
 
+# Process commands that needs everything set
+
 setup_environment
 
 while (( $# > 0 ))
 do
   case "$1" in
-    -d)
-      shift
-      enable_lh_debug
-      ;;
-    -t)
-      shift
-      enable_lh_trace
-      ;;
-
     login)
       shift
       if help_arg_passed "$@"; then
