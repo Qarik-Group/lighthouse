@@ -71,7 +71,6 @@ declare -A variables=(
   [BOSH_CA_CERT]="required"
   [BOSH_CLIENT]="required"
   [BOSH_CLIENT_SECRET]="required"
-  [BOSH_ENVIRONMENT]="required"
   [CF_API]="required"
   [CF_SKIP_SSL_VALIDATION]="optional"
   [CF_ORG]="required"
@@ -91,7 +90,6 @@ declare -A genesis_defaults=(
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
   [BOSH_ALIAS]="\${BASE_ENV}"
-  [BOSH_ENVIRONMENT]="\${BASE_ENV}"
   [BOSH_IP]="safe get secret/exodus/\${BASE_ENV}/bosh:url"
   [BOSH_IP,type]="command"
 )
@@ -230,7 +228,6 @@ setup_environment() {
   set_variable BOSH_CA_CERT           || ret_code=$?
   set_variable BOSH_CLIENT            || ret_code=$?
   set_variable BOSH_CLIENT_SECRET     || ret_code=$?
-  set_variable BOSH_ENVIRONMENT       || ret_code=$?
   set_variable BOSH_IP                || ret_code=$?
   set_variable CF_DOMAIN              || ret_code=$?
   set_variable CF_API                 || ret_code=$?
@@ -853,14 +850,15 @@ export BOSH_ALIAS="\${BOSH_ALIAS:="replace-me"}"
 
 # export CF_DIAL_TIMEOUT="\${CF_DIAL_TIMEOUT:=180}" # Uncomment if you need for login/usage
 export CF_USERNAME="\${CF_USERNAME:="admin"}"
-export CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:=""}"
 export CF_DOMAIN="\${CF_DOMAIN:="replace-me"}" # OPTIONAL
-export VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:=""}" # example: secret/.....
 export CF_API="\${CF_API:="replace-me"}"
 export CF_ORG="\${CF_ORG:="replace-me"}"
 export CF_SPACE="\${CF_SPACE:="replace-me"}"
-export VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT_PATH:=""}" # example: secret/.....
 export BOSH_CLIENT="\${BOSH_CLIENT:="replace-me"}"
+# 
+export CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:=""}"
+export VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:=""}" # example: secret/.....
+export VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT_PATH:=""}" # example: secret/.....
 export VAULT_BOSH_CLIENT_SECRET_PATH="\${VAULT_BOSH_CLIENT_SECRET_PATH:=""}" # example: secret/.....
 
 EOF
