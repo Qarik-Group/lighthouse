@@ -778,6 +778,24 @@ check_usage() {
   ${return_by} ${rc}
 }
 
+help_usage() {
+  declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
+  echo "Usage: $0 help"
+  echo "TODO"
+  echo "TODO"
+  echo "TODO"
+  ${return_by} ${rc}
+}
+
+init_usage() {
+  declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
+  echo "Usage: ${0} init"
+  echo "  Create a directory and copy over the data files to the default"
+  ${return_by} ${rc}
+}
+
 login_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
@@ -798,13 +816,11 @@ logout_usage(){
   ${return_by} ${rc}
 }
 
-test_usage() {
+new_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 test  environment"
-  echo "  run all tests."
-  echo "  test bosh: only the bosh tests."
-  echo "    test cf: only cloud foundry tests."
+  echo "Usage: $0 new environment"
+  echo "  Create a config.environment.env and copy over the data files to the environment subdirectory"
   ${return_by} ${rc}
 }
 
@@ -820,18 +836,13 @@ run_usage() {
   ${return_by} ${rc}
 }
 
-new_usage() {
+test_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 new environment"
-  echo "  Create a config.environment.env and copy over the data files to the environment subdirectory"
-  ${return_by} ${rc}
-}
-init_usage() {
-  declare rc=${1:-1}
-  declare return_by=${2:-"exit"}
-  echo "Usage: ${0} init"
-  echo "  Create a directory and copy over the data files to the default"
+  echo "Usage: $0 test  environment"
+  echo "  run all tests."
+  echo "  test bosh: only the bosh tests."
+  echo "    test cf: only cloud foundry tests."
   ${return_by} ${rc}
 }
 
@@ -840,6 +851,7 @@ usage() {
   declare return_by=${2:-"exit"}
   echo "Lighthouse, near friendly shores."
   echo "  check  -- check for dependencies or signed in."
+  echo "  help   -- Get help on one or more commands"
   echo "  init   -- Create config directory for addding lighthouse environment"
   echo "  login  -- sign into vault with safe, then BOSH and CF with vault."
   echo "  logout -- logout of safe, BOSH and CF."
@@ -850,33 +862,27 @@ usage() {
   ${return_by} ${rc}
 }
 
-declare -A usages=(
-  [check]="check_usage"
-  [init]="init_usage"
-  [login]="login_usage"
-  [logout]="logout_usage"
-  [new]="new_usage"
-  [repipe]="repipe_usage"
-  [run]="run_usage"
-  [test]="test_usage"
-  [help]="usage"
-)
-
 do_help_cmd() {
-  local rc=0
+  local rc=0 func
+  (( $# == 0 )) && usage 0
   for cmd in "$@"
   do
-    if [[ -n "${usages[${cmd}]:+has_usage}" ]]
+    func=${cmd}_usage
+    if [[ $(type -t ${func}) != "function" ]]
     then
-      ${usages[${cmd}]} 0 return
-    else
       echo "${cmd}: no such command exists"
-      (( rc < 1 )) && usage
       rc=1
     fi
-    echo
   done
-  (( $# < 1 )) && usage 0
+
+  (( rc == 1 )) && usage
+
+  declare -i i=0
+  for cmd in "$@"
+  do
+    (( i++ != 0 )) && echo
+    ${cmd}_usage 0 return
+  done
   exit "${rc}"
 }
 
@@ -950,19 +956,16 @@ fi
 
 initialize_environment
 
-while (( $# > 0 ))
-do
-  case "$1" in
-    init)
-      shift
-      if [[ $# -lt 1 ]] ; then init_usage ; fi
-      do_init $1
-      ;;
-    *)
-      break
-      ;;
-  esac
-done
+case "$1" in
+  init)
+    shift
+    if [[ $# -lt 1 ]] ; then init_usage ; fi
+    do_init $1
+    ;;
+  *)
+    break
+    ;;
+esac
 
 (( $# > 0 )) || usage 
 
@@ -970,121 +973,118 @@ done
 
 setup_environment
 
-while (( $# > 0 ))
-do
-  case "$1" in
-    login)
+case "$1" in
+  login)
+    shift
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        bosh)
+          bosh_login
+          exit 0
+          ;;
+        cf)
+          cf_login
+          exit 0
+          ;;
+        safe)
+          safe_login
+          exit 0
+          ;;
+        uaa)
+          uaa_login
+          exit 0
+          ;;
+        *)
+          echo "Unrecognized argument: '${1}'"
+          login_usage
+          ;;
+      esac
       shift
+    done
+    login "$@"
+    ;;
+  logout)
+    shift
+    while [[ $# -gt 0 ]]; do
+      case "$1" in           
+        bosh)
+          bosh_logout
+          exit 0
+          ;;
+        cf)
+          cf_logout
+          exit 0
+          ;;
+        safe)
+          safe_logout
+          exit 0
+          ;;
+        uaa)
+          uaa_logout
+          exit 0
+          ;;
+        *)
+          echo "Unrecognized argument: '${1}'"
+          logout_usage
+          ;;
+      esac
+      shift
+    done
+    logout "$@"
+    ;;
+  test)
+    shift
+    # If no args, run all tests
+    if [[ $# -eq 0 ]]; then
+      for i in "bosh" "cf" "uaa"; do
+        component_test "${i}"
+      done
+    else
       while [[ $# -gt 0 ]]; do
         case "$1" in
-          bosh)
-            bosh_login
-            exit 0
-            ;;
-          cf)
-            cf_login
-            exit 0
-            ;;
-          safe)
-            safe_login
-            exit 0
-            ;;
-          uaa)
-            uaa_login
-            exit 0
+          cf|bosh|uaa)
+            component_test "${1}"
             ;;
           *)
             echo "Unrecognized argument: '${1}'"
-            login_usage
+            test_usage
             ;;
         esac
         shift
       done
-      login "$@"
-      ;;
-    logout)
-      shift
-      while [[ $# -gt 0 ]]; do
-        case "$1" in           
-          bosh)
-            bosh_logout
-            exit 0
-            ;;
-          cf)
-            cf_logout
-            exit 0
-            ;;
-          safe)
-            safe_logout
-            exit 0
-            ;;
-          uaa)
-            uaa_logout
-            exit 0
-            ;;
-          *)
-            echo "Unrecognized argument: '${1}'"
-            logout_usage
-            ;;
-        esac
-        shift
-      done
-      logout "$@"
-      ;;
-    test)
-      shift
-      # If no args, run all tests
-      if [[ $# -eq 0 ]]; then
-        for i in "bosh" "cf" "uaa"; do
-          component_test "${i}"
-        done
-      else
-        while [[ $# -gt 0 ]]; do
-          case "$1" in
-            cf|bosh|uaa)
-              component_test "${1}"
-              ;;
-            *)
-              echo "Unrecognized argument: '${1}'"
-              test_usage
-              ;;
-          esac
-          shift
-        done
-      fi
-      ;;
-    run)
-      shift
-      skip_login_arg_passed $@
-      skip_login=$?
+    fi
+    ;;
+  run)
+    shift
+    skip_login_arg_passed $@
+    skip_login=$?
 
-      # if no args are passed, only the skip login is passed, or the help arg is passed
-      if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]]; then
-        run_usage
-      fi
-        while [[ $# -gt 0 ]]; do
-          case "$1" in
-            -s) # already captured so ignore
-              shift
-              continue
-              ;;
-            *)
-              echo "Running test $1"
-              run_individual_test "$1"
-              ;;
-          esac
-          shift
-        done
-        [[ "${skip_login}" -ne 0 ]] && logout
-      ;;
-    repipe)
-      shift
-      repipe
-      ;;
-    *)
-      usage
-      ;;
-  esac
-done
+    # if no args are passed, only the skip login is passed, or the help arg is passed
+    if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]]; then
+      run_usage
+    fi
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          -s) # already captured so ignore
+            shift
+            continue
+            ;;
+          *)
+            echo "Running test $1"
+            run_individual_test "$1"
+            ;;
+        esac
+        shift
+      done
+      [[ "${skip_login}" -ne 0 ]] && logout
+    ;;
+  repipe)
+    shift
+    repipe
+    ;;
+  *)
+    usage
+    ;;
+esac
 
 exit $?
