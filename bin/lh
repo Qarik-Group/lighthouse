@@ -992,11 +992,21 @@ do
   case "$1" in
     -d)
       shift
-      enable_lh_debug
+      if (( $# > 1 )); then 
+        enable_lh_debug "$1"; shift
+      else
+        echo "Missing -d argument or no command to run"
+        usage
+      fi
       ;;
     -t)
       shift
-      enable_lh_trace
+      if (( $# > 1 )); then 
+        enable_lh_trace "$1"; shift
+      else
+        echo "Missing -t argument or no command to run"
+        usage
+      fi
       ;;
     help|-h|--help)
       shift
@@ -1009,12 +1019,10 @@ do
     check)
       shift
       perform_action 0 check check_usage "$@"
-      exit $?
       ;;
     init)
       shift
       perform_action 1 do_init init_usage "$@"
-      exit $?
       ;;
     login)
       shift
@@ -1037,6 +1045,7 @@ do
       perform_action 2 do_run run_usage "$@"
       ;;
     *)
+      echo "Invalid command '$1'"
       usage
       ;;
   esac
