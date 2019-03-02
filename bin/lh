@@ -43,7 +43,6 @@ add_lib_paths_to_PATH() {
     return 0
 }
 
-
 initialize_environment() {
 
   if [[ -z ${LH_DIRECTORY:+is_set_and_not_empty}  ]]
@@ -375,6 +374,46 @@ component_test() {
   return 0
 }
 
+do_test() {
+  (( $# == 0 )) && set -- bosh cf uaa
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      cf|bosh|uaa)
+        component_test "${1}"
+        ;;
+      *)
+        echo "Unrecognized argument: '${1}'"
+        test_usage
+        ;;
+    esac
+    shift
+  done
+}
+
+do_run() {
+  skip_login_arg_passed $@
+  skip_login=$?
+
+  # if no args are passed, only the skip login is passed, or the help arg is passed
+  if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]]; then
+    run_usage
+  fi
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -s) # already captured so ignore
+        shift
+        continue
+        ;;
+      *)
+        echo "Running test $1"
+        run_individual_test "$1"
+        ;;
+    esac
+    shift
+  done
+  [[ "${skip_login}" -ne 0 ]] && logout
+}
+
 help_arg_passed() {
   for i in "${@}"
   do
@@ -384,11 +423,8 @@ help_arg_passed() {
 }
 
 skip_login_arg_passed() {
-  inputs=("$@")
-  for i in "${inputs[@]}"; do
-    if [[ "${i}" == "-s" ]]; then
-      return 0
-    fi
+  for i in "${@}"; do
+    [[ "${i}" == "-s" ]] && return 0
   done
   return 1
 }
@@ -601,28 +637,59 @@ uaa_logout() {
 
 check() {
   declare rc=0
-  check_dependencies || rc=$?
-  check_safe || rc=$?
+  (( $# == 0 )) && set -- dependencies safe
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      dependencies)
+        check_dependencies || rc=$?
+        ;;
+      safe)
+        check_safe || rc=$?
+        ;;
+      *)
+        echo "Unrecognized argument: '${1}'"
+        check_usage
+        ;;
+    esac
+    shift
+  done
   return $rc
 }
 
-login() {
-  safe_login
-  bosh_login
-  cf_login
-  uaa_login
+do_login() {
+  (( $# == 0 )) && set -- safe bosh cf uaa
+  while (( $# > 0 )); do
+    case "$1" in
+      bosh|cf|safe|uaa)
+        ${1}_login
+        ;;
+      *)
+        echo "Unrecognized argument: '${1}'"
+        login_usage
+        ;;
+    esac
+    shift
+  done
 
     #TODO: ensure that if an error raised in previous functions
     #they will break before this step.
     step "Logged into all systems."
-
   }
 
-logout() {
-  safe_logout
-  bosh_logout
-  cf_logout
-  uaa_logout
+do_logout() {
+  (( $# == 0 )) && set -- uaa cf bosh safe
+  while [[ $# -gt 0 ]]; do
+    case "$1" in           
+      bosh|cf|safe|uaa)
+        ${1}_logout
+        ;;
+      *)
+        echo "Unrecognized argument: '${1}'"
+        logout_usage
+        ;;
+    esac
+    shift
+  done
 
     #TODO: ensure that if an error raised in previous functions
     #they will break before this step.
@@ -643,7 +710,7 @@ run_individual_test() {
   fi
 }
 
-repipe() {
+do_repipe() {
   local ret_code=0
 
   check_dependencies repipe
@@ -678,17 +745,20 @@ EOF
 popd
 }
 
+# TODO Do we extend init to create more than one environment at a time
 do_init() {
+  (( $# <  1 )) && init_usage
   new_directory="$1"
   echo "Creating directory ${new_directory}"
-  mkdir ${new_directory}
-  cp -Riv ${LH_DIRECTORY}/templates/data ${new_directory}/
+  mkdir ${new_directory} || return $?
+  cp -Riv ${LH_DIRECTORY}/templates/data ${new_directory}/ || return $?
   #    cp -Riv ${LH_DIRECTORY}/templates/tests ${new_directory}/
-  exit 0
+  return 0
 }
 
 new_env() {
-  LH_ENV_NAME="$1"
+  if [[ $# -lt 1 ]] ; then new_usage ; fi
+  local LH_ENV_NAME="$1"
 
   if [[ -e "config.${LH_ENV_NAME}.env" ]]
   then
@@ -824,6 +894,16 @@ new_usage() {
   ${return_by} ${rc}
 }
 
+repipe_usage() {
+  declare rc=${1:-1}
+  declare return_by=${2:-"exit"}
+  echo "Usage: $0 repipe"
+  echo "TODO"
+  echo "TODO"
+  echo "TODO"
+  ${return_by} ${rc}
+}
+
 run_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
@@ -886,6 +966,21 @@ do_help_cmd() {
   exit "${rc}"
 }
 
+perform_action() {
+  local setup=$1
+  local action=$2
+  local action_usage=$3
+  shift;shift;shift
+  if help_arg_passed "$@"; then
+    ${action_usage} 0
+  fi
+  (( setup > 0 )) && initialize_environment
+  (( setup > 1 )) && setup_environment
+  ${action} "$@"
+  exit $?
+}
+
+
 # End of function definition section
 
 (( $# > 0 )) || usage
@@ -905,183 +1000,46 @@ do
       ;;
     help|-h|--help)
       shift
-      do_help_cmd "$@"
+      perform_action 0 do_help_cmd help_usage "$@"
       ;;
     new)
       shift
-      if help_arg_passed "$@"; then
-        new_usage 0
-      fi
-      if [[ $# -lt 1 ]] ; then new_usage ; fi
-      new_env "$1"
+      perform_action 0 new_env new_usage "$@"
       ;;
     check)
       shift
-      if help_arg_passed "$@"; then
-        check_usage 0
-      fi
-      while [[ $# -gt 0 ]]; do
-        case "$1" in
-          dependencies)
-            check_dependencies
-            exit $?
-            ;;
-          safe)
-            check_safe
-            exit $?
-            ;;
-          *)
-            echo "Unrecognized argument: '${1}'"
-            check_usage
-            ;;
-        esac
-        shift
-      done
-      check "$@"
+      perform_action 0 check check_usage "$@"
       exit $?
       ;;
+    init)
+      shift
+      perform_action 1 do_init init_usage "$@"
+      exit $?
+      ;;
+    login)
+      shift
+      perform_action 2 do_login login_usage "$@"
+      ;;
+    logout)
+      shift
+      perform_action 2 do_logout logout_usage "$@"
+      ;;
+    repipe)
+      shift
+      perform_action 2 do_repipe repipe_usage "$@"
+      ;;
+    test)
+      shift
+      perform_action 2 do_test test_usage "$@"
+      ;;
+    run)
+      shift
+      perform_action 2 do_run run_usage "$@"
+      ;;
     *)
-      break;
+      usage
       ;;
   esac
 done
-
-(( $# > 0 )) || usage 
-
-if help_arg_passed "$@"; then
-  do_help_cmd $1
-fi
-
-# Process commands that only need LH_DIRECTORY set
-
-initialize_environment
-
-case "$1" in
-  init)
-    shift
-    if [[ $# -lt 1 ]] ; then init_usage ; fi
-    do_init $1
-    ;;
-esac
-
-(( $# > 0 )) || usage 
-
-# Process commands that needs everything set
-
-setup_environment
-
-case "$1" in
-  login)
-    shift
-    while [[ $# -gt 0 ]]; do
-      case "$1" in
-        bosh)
-          bosh_login
-          exit 0
-          ;;
-        cf)
-          cf_login
-          exit 0
-          ;;
-        safe)
-          safe_login
-          exit 0
-          ;;
-        uaa)
-          uaa_login
-          exit 0
-          ;;
-        *)
-          echo "Unrecognized argument: '${1}'"
-          login_usage
-          ;;
-      esac
-      shift
-    done
-    login "$@"
-    ;;
-  logout)
-    shift
-    while [[ $# -gt 0 ]]; do
-      case "$1" in           
-        bosh)
-          bosh_logout
-          exit 0
-          ;;
-        cf)
-          cf_logout
-          exit 0
-          ;;
-        safe)
-          safe_logout
-          exit 0
-          ;;
-        uaa)
-          uaa_logout
-          exit 0
-          ;;
-        *)
-          echo "Unrecognized argument: '${1}'"
-          logout_usage
-          ;;
-      esac
-      shift
-    done
-    logout "$@"
-    ;;
-  test)
-    shift
-    # If no args, run all tests
-    if [[ $# -eq 0 ]]; then
-      for i in "bosh" "cf" "uaa"; do
-        component_test "${i}"
-      done
-    else
-      while [[ $# -gt 0 ]]; do
-        case "$1" in
-          cf|bosh|uaa)
-            component_test "${1}"
-            ;;
-          *)
-            echo "Unrecognized argument: '${1}'"
-            test_usage
-            ;;
-        esac
-        shift
-      done
-    fi
-    ;;
-  run)
-    shift
-    skip_login_arg_passed $@
-    skip_login=$?
-
-    # if no args are passed, only the skip login is passed, or the help arg is passed
-    if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]]; then
-      run_usage
-    fi
-      while [[ $# -gt 0 ]]; do
-        case "$1" in
-          -s) # already captured so ignore
-            shift
-            continue
-            ;;
-          *)
-            echo "Running test $1"
-            run_individual_test "$1"
-            ;;
-        esac
-        shift
-      done
-      [[ "${skip_login}" -ne 0 ]] && logout
-    ;;
-  repipe)
-    shift
-    repipe
-    ;;
-  *)
-    usage
-    ;;
-esac
 
 exit $?
