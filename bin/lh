@@ -394,7 +394,7 @@ do_run() {
   skip_login_arg_passed $@
   skip_login=$?
 
-  # if no args are passed, only the skip login is passed, or the help arg is passed
+  # if no args are passed, only the skip login is passed
   if [[ $# -lt 1 ]] || [[ $# -lt 2 && "$skip_login" == "0" ]]; then
     run_usage
   fi
@@ -411,7 +411,7 @@ do_run() {
     esac
     shift
   done
-  [[ "${skip_login}" -ne 0 ]] && logout
+  [[ "${skip_login}" -ne 0 ]] && do_logout
 }
 
 help_arg_passed() {
@@ -699,7 +699,7 @@ do_logout() {
 run_individual_test() {
   declare test_file test_path
   test_file="${1:?run_individual_test() - Missing quota/plan argument   $(caller 0)}"
-  [[ "${skip_login}" -ne 0 ]] && login
+  [[ "${skip_login}" -ne 0 ]] && do_login
   test_path=$(find_test_path "${test_file}")
   if [[ $? -eq 0 ]]; then
     step "Executing ${test_path}"
