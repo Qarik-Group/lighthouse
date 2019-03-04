@@ -82,11 +82,19 @@ if ! type is_lh_debug_enabled >/dev/null
 then
 
   is_lh_debug_enabled() {
-    [[ -n ${LH_DEBUG+is_set} && ",${LH_DEBUG}" == *,$1,* ]] 
+    [[ -n ${LH_DEBUG+is_set} ]] && {
+      for word in ${1/,/ }; do
+        [[ ",${LH_DEBUG}" == *,${word},* ]] && return 0
+      done
+    }
   }
 
   is_lh_trace_enabled() {
-    [[ -n ${LH_TRACE+is_set} && ",${LH_TRACE}" == *,$1,* ]] 
+    [[ -n ${LH_TRACE+is_set} ]] && {
+      for word in ${1/,/ }; do
+        [[ ",${LH_TRACE}" == *,${word},* ]] && return 0
+      done
+    }
   }
 
   error() {
