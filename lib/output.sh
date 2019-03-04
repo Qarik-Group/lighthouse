@@ -78,16 +78,41 @@ active() {
   return 0
 }
 
-error() {
-  echo -e "$*" >&2
-}
+if ! type is_lh_debug_enabled >/dev/null
+then
 
-fail() {
-  error "$*"
-  exit 1
-}
+  is_lh_debug_enabled() {
+    [[ -n ${LH_DEBUG+is_set} && ",${LH_DEBUG}" == *,$1,* ]] 
+  }
 
-debug() {
-  error "$*"
-}
+  is_lh_trace_enabled() {
+    [[ -n ${LH_TRACE+is_set} && ",${LH_TRACE}" == *,$1,* ]] 
+  }
 
+  error() {
+    echo -e "ERROR: $*" >&2
+  }
+
+  debug() {
+    declare debug_type=${1?debug() - no debug keyword given   $(caller 0)}
+    if is_lh_debug_enabled ${debug_type}
+    then
+      shift
+      echo -e "DEBUG: $*" >&2
+    fi
+  }
+
+  trace() {
+    declare trace_type=${1?debug() - no trace keyword given   $(caller 0)}
+    if is_lh_trace_enabled ${trace_type}
+    then
+      shift
+      echo -e "TRACE: $*" >&2
+    fi
+  }
+
+  fatal() {
+    echo -e "FATAL: $*" >&2
+    exit 1
+  }
+fi
