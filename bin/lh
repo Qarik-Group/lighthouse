@@ -3,11 +3,16 @@
 # Needed for BASH 5.x extended globbing
 shopt -s extglob
 
-(( ${BASH_VERSINFO[0]} > 3 )) || {
-  echo -e "Bash version must be  4.X or greater" >&2 && exit 1
+# NOTE Cannot move into output.h since is it used before LH_DIRECTORY is defined 
+
+fatal() {
+  echo -e "FATAL: $*" >&2
+  exit 1
 }
 
-# NOTE Cannot move into output.h since is it used before LH_DIRECTORY is defined 
+(( ${BASH_VERSINFO[0]} > 3 )) || {
+  fatal "Bash version must be  4.X or greater"
+}
 
 step() {
   cat <<EOF
@@ -17,6 +22,34 @@ step() {
 ==//
 
 EOF
+}
+
+is_lh_debug_enabled() {
+  [[ -n ${LH_DEBUG+is_set} && ",${LH_DEBUG}" == *,$1,* ]] 
+}
+
+is_lh_trace_enabled() {
+  [[ -n ${LH_TRACE+is_set} && ",${LH_TRACE}" == *,$1,* ]] 
+}
+
+debug() {
+  declare debug_type=${1?debug() - no debug keyword given   $(caller 0)}
+  if is_lh_debug_enabled ${debug_type}; then
+    shift
+    echo -e "DEBUG: $*" >&2
+  fi
+}
+
+trace() {
+  declare trace_type=${1?debug() - no trace keyword given   $(caller 0)}
+  if is_lh_trace_enabled ${trace_type}; then
+    shift
+    echo -e "TRACE: $*" >&2
+  fi
+}
+
+error() {
+  echo -e "ERROR: $*" >&2
 }
 
 declare inode_list
@@ -52,8 +85,7 @@ initialize_environment() {
 
   if [[ ! -r "${LH_DIRECTORY}/lib/output.sh" ]]
   then
-    echo "LH_DIRECTORY does not point to the lighthouse directory"
-    exit 1
+    fatal "LH_DIRECTORY does not point to the lighthouse directory"
   fi
 
   . ${LH_DIRECTORY}/lib/output.sh
@@ -134,14 +166,13 @@ set_variable() {
     declare -a array_value
 
     if [[ -z ${required} ]]; then
-        # TODO Do we need custom error messages?
-        echo "${display_name} is not defined in the variables table" >&2
+        debug  "set_variable" "${display_name} is not defined in the variables table"
         return 2
     fi
 
     [[ ${!base_variable} == "replace-me" ]] && {
       declare -gx ${base_variable}=""
-      echo "DEBUG: clearing ${base_variable}"
+      debug "set_variable" "clearing ${base_variable}"
     }
 
     # look in environment
@@ -150,7 +181,7 @@ set_variable() {
     then
       return 0
     else
-      echo "DEBUG: ${display_name} has no value or is empty" >&2
+      debug "set_variable" "${display_name} has no value or is empty"
     fi
 
     # look in custom path
@@ -162,8 +193,8 @@ set_variable() {
       # TODO Can we test if nameref variable reference exists
       declare indirect_path=${custom_paths[${base_variable}]}
 
-      echo "DEBUG: indirect_variable ${indirect_variable}"
-      echo "DEBUG: indirect_path ${indirect_path}"
+      debug "set_variable" "indirect_variable ${indirect_variable}"
+      debug "set_variable" "indirect_path ${indirect_path}"
 
       if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" && "${!indirect_variable}" != "replace-me"  ]]
       then
@@ -178,10 +209,10 @@ set_variable() {
         declare -gx "${base_variable}=${value}"
         return 0
       else
-        echo "DEBUG: No ${BASE_TYPE} paths found" >&2
+        debug "set_variable" "No ${BASE_TYPE} paths found"
       fi
     else
-      echo "DEBUG: ${display_name} has no custom paths" >&2
+      debug "set_variable" "${display_name} has no custom paths"
     fi
 
     # deal with default values
@@ -211,9 +242,9 @@ setup_environment() {
     if [[ -s "config.${USE_ENV}.env" ]]
     then
       source "config.${USE_ENV}.env"
-      echo "DEBUG: Sourcing config.${USE_ENV}.env" >&2
+      debug "set_variable"  "Sourcing config.${USE_ENV}.env"
     else
-      echo "USE_ENV set to '${USE_ENV}' but config.${USE_ENV}.env not found"
+      fatal "USE_ENV set to '${USE_ENV}' but config.${USE_ENV}.env not found"
     fi
   else
     [[ -s "config.env" ]] && source "config.env"
@@ -236,8 +267,12 @@ setup_environment() {
   set_variable CF_PASSWORD            || ret_code=$?
   set_variable CF_USERNAME            || ret_code=$?
 
-  export | grep -E "CF_|BOSH_|LH_|VAULT_" | awk '{ print"DEBUG: "  $0; }'
-  echo "DEBUG: setup_environment() rc_code $ret_code"
+  if is_lh_debug_enabled "set_variable"; then
+    export | grep -E "CF_|BOSH_|LH_|VAULT_" | while read -r line; do
+      debug  "set_variable" "${line}"
+    done
+  fi
+  debug  "set_variable" "setup_environment() rc_code $ret_code"
   return $ret_code
 }
 
@@ -264,8 +299,8 @@ need_command() {
   declare cmd=${1:?need_command() - no command name given   $(caller 0)}
 
   if [[ ! -x "$(command -v $cmd)" ]]; then
-    echo "The ${cmd} is not found in your PATH.  Please install and update"
-    echo "your PATH before proceeding."
+    error "The ${cmd} is not found in your PATH.  Please install and update"
+    error "your PATH before proceeding."
     return 1
   fi
   return 0
@@ -300,11 +335,11 @@ has_minimum_program_version() {
     declare progver="${BASH_REMATCH[1]}"
     if ! is_version_ok "${minimum}" "${progver}"
     then
-      echo "You need to upgrade ${program} from version ${progver} to at least version ${minimum}" 
+      error "You need to upgrade ${program} from version ${progver} to at least version ${minimum}" 
       return 1
     fi
   else
-    echo "Unable to extract version for ${program}" 
+    error "Unable to extract version for ${program}" 
     return 1
   fi
   return 0
@@ -319,7 +354,7 @@ find_included_path() {
   elif [[ -f "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
     echo "${LH_DIRECTORY}/templates/tests/${test_path}"
   else
-    warn "Test '${test_path}' does not exist; skipping."
+    error "Test '${test_path}' does not exist; skipping."
     return 1
   fi
   return 0
@@ -353,7 +388,6 @@ component_test() {
 
   declare included_path=$(find_included_path ${component}/included)
   if [[ $? -ne 0 ]]; then
-    warn "${included_path}"
     return 1
   fi
 
@@ -382,7 +416,7 @@ do_test() {
         component_test "${1}"
         ;;
       *)
-        echo "Unrecognized argument: '${1}'"
+        error "Unrecognized argument: '${1}'"
         test_usage
         ;;
     esac
@@ -507,7 +541,7 @@ check_safe() {
 
   safe get secret/handshake > /dev/null
   if [[ $? > 0 ]]; then
-    echo "There was an error checking safe.  Please ensure your VAULT_ADDR and VAULT_TOKEN are correct."
+    error "There was an error checking safe.  Please ensure your VAULT_ADDR and VAULT_TOKEN are correct."
     return 1
   fi
   echo -e "\nOK\n"
@@ -562,17 +596,17 @@ safe_login() {
     then
       echo "Already logged into   Vault. Skipping Vault login"
     else
-      echo "Please login to safe or set the VAULT_TOKEN"
+      error "Please login to safe or set the VAULT_TOKEN"
       exit 1
     fi
   else
     step "Logging into safe."
     if [[ $VAULT_ADDR == +("replace-me"|'') ]]; then 
-       echo "Please configure VAULT_ADDR in your configure file "
+       error "Please configure VAULT_ADDR in your configure file "
        exit 1
      fi
      if [[ $VAULT_ALIAS == +("replace-me"|'') ]]; then 
-        echo  "Please configure VAULT_ALIAS in your configure file"
+        error  "Please configure VAULT_ALIAS in your configure file"
         exit
      fi
      safe -k target ${VAULT_ADDR} ${VAULT_ALIAS}
@@ -614,7 +648,7 @@ uaa_login() {
     echo "Using UAA from Vault: ${UAA_ADDR}"
   else
     # CF_API="$( safe get secret/exodus/${BASE_ENV}/cf:api_url )"
-    echo "CFAPI: ${CF_API}"
+    echo  "CF_API: ${CF_API}"
 
     UAA_ADDR=$(curl -k ${CF_API} |jq -r '.links.uaa.href')
     echo "Pulled UAA from API: ${UAA_ADDR}"
@@ -647,7 +681,7 @@ check() {
         check_safe || rc=$?
         ;;
       *)
-        echo "Unrecognized argument: '${1}'"
+        error "Unrecognized argument: '${1}'"
         check_usage
         ;;
     esac
@@ -664,7 +698,7 @@ do_login() {
         ${1}_login
         ;;
       *)
-        echo "Unrecognized argument: '${1}'"
+        error "Unrecognized argument: '${1}'"
         login_usage
         ;;
     esac
@@ -684,7 +718,7 @@ do_logout() {
         ${1}_logout
         ;;
       *)
-        echo "Unrecognized argument: '${1}'"
+        error "Unrecognized argument: '${1}'"
         logout_usage
         ;;
     esac
@@ -826,14 +860,26 @@ EOF
   exit 0
 }
 
-#TODO figure out if we want a more complicated setting
+# single argument with , : or space separators
+# Using , as the default when concatenating values
+
 enable_lh_debug() {
-  export LH_DEBUG=
+  local OLD_IFS="${IFS}"
+  IFS=',: ';
+  set -- ${LH_DEBUG} "$@"
+  local sep=${IFS::1}
+  export LH_DEBUG="$@"${sep}
+  IFS=${OLD_IFS};
 }
 
-#TODO figure out if we want a more complicated setting
 enable_lh_trace() {
-  export LH_TRACE=
+  local OLD_IFS="${IFS}"
+  IFS=',: ';
+  set -- ${LH_TRACE} "$@"
+  local sep=${IFS::1}
+  export LH_TRACE="$@"${sep}
+  IFS=${OLD_IFS};
+  export LH_TRACE="$@"
 }
 
 # teach a man to CLI
@@ -950,7 +996,7 @@ do_help_cmd() {
     func=${cmd}_usage
     if [[ $(type -t ${func}) != "function" ]]
     then
-      echo "${cmd}: no such command exists"
+      error "${cmd}: no such command exists"
       rc=1
     fi
   done
@@ -995,7 +1041,7 @@ do
       if (( $# > 1 )); then 
         enable_lh_debug "$1"; shift
       else
-        echo "Missing -d argument or no command to run"
+        error "Missing -d argument or no command to run"
         usage
       fi
       ;;
@@ -1004,7 +1050,7 @@ do
       if (( $# > 1 )); then 
         enable_lh_trace "$1"; shift
       else
-        echo "Missing -t argument or no command to run"
+        error "Missing -t argument or no command to run"
         usage
       fi
       ;;
@@ -1045,7 +1091,7 @@ do
       perform_action 2 do_run run_usage "$@"
       ;;
     *)
-      echo "Invalid command '$1'"
+      error "Invalid command '$1'"
       usage
       ;;
   esac
