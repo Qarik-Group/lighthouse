@@ -133,8 +133,6 @@ set_variable() {
     declare value
     declare -a array_value
 
-    echo "DEBUG: LH_DEBUG  ${LH_DEBUG}"
-
     if [[ -z ${required} ]]; then
         # TODO Do we need custom error messages?
         echo "${display_name} is not defined in the variables table" >&2
@@ -828,15 +826,19 @@ EOF
   exit 0
 }
 
-#TODO figure out if we want a more complicated setting
+# single argument with , : or space separators
+# Using , as the default when concatenating values
+
 enable_lh_debug() {
   local OLD_IFS="${IFS}"
-  IFS=',: '
-  set -- $LH_DEBUG $@
-  echo $# $@ 
-  declare -gx LH_DEBUG="$@"
-  IFS=${OLD_IFS}
-  echo LH_DEBUG "${LH_DEBUG}"
+  IFS=',: ';
+  set -- ${LH_DEBUG:-""} $@
+  local sep=${IFS::1}
+  export LH_DEBUG="$@"
+  IFS=${OLD_IFS};
+  [[ ${LH_DEBUG:0:1} == ',' && ${LH_DEBUG} != ',,' ]] &&
+    LH_DEBUG=${LH_DEBUG:1}
+  LH_DEBUG="${sep}${LH_DEBUG}${sep}"
 }
 
 #TODO figure out if we want a more complicated setting
