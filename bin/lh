@@ -133,6 +133,8 @@ set_variable() {
     declare value
     declare -a array_value
 
+    echo "DEBUG: LH_DEBUG  ${LH_DEBUG}"
+
     if [[ -z ${required} ]]; then
         # TODO Do we need custom error messages?
         echo "${display_name} is not defined in the variables table" >&2
@@ -828,12 +830,18 @@ EOF
 
 #TODO figure out if we want a more complicated setting
 enable_lh_debug() {
-  export LH_DEBUG=
+  local OLD_IFS="${IFS}"
+  IFS=',: '
+  set -- $LH_DEBUG $@
+  echo $# $@ 
+  declare -gx LH_DEBUG="$@"
+  IFS=${OLD_IFS}
+  echo LH_DEBUG "${LH_DEBUG}"
 }
 
 #TODO figure out if we want a more complicated setting
 enable_lh_trace() {
-  export LH_TRACE=
+  export LH_TRACE="$@"
 }
 
 # teach a man to CLI
