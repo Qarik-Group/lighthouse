@@ -354,12 +354,13 @@ setup_environment() {
       source "config.${LH_BASE_ENV}.env"
       debug "set_variable"  "Sourcing config.${LH_BASE_ENV}.env"
       [[ -z "${BASE_ENV}" || -z "${LH_BASE_ENV}" || "${BASE_ENV}" != "${LH_BASE_ENV}" ]] && 
-        fatal "The command line environment does not match the BASE_ENV in config.${LH_BASE_ENV}.env"
+        fatal "The command line environment parameter does not match the BASE_ENV in config.${LH_BASE_ENV}.env"
     else
       fatal "BASE_ENV set to '${LH_BASE_ENV}' but config.${LH_BASE_ENV}.env not found"
     fi
   else
-    [[ -s "config.env" ]] && source "config.env"
+    fatal "Missing the environment parameter from the lighthouse command"
+    # [[ -s "config.env" ]] && source "config.env"
   fi
 
   : ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
