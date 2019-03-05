@@ -101,6 +101,25 @@ initialize_environment() {
   add_lib_paths_to_PATH
 }
 
+declare LH_BASE_ENV
+
+initialize_BASE_ENV() {
+  declare cmd=${1?initialize_BASE_ENV() - Missing command keyword   $(caller 0)}
+  declare action_usage=${2?initialize_BASE_ENV() - no command usage function   $(caller 0)}
+  declare base_env=${3?initialize_BASE_ENV() - no command usage function   $(caller 0)}
+  [[ -z "${base_env}" ]] && {
+    error "Missing environment parameter"
+    ${action_usage}
+  }
+
+  [[ ",bosh,cf,safe,uaa," == *,${base_env},* ]] && {
+    error "Ambiguous or Missing environment parameter"
+    ${action_usage}
+  }
+  
+  declare -gx LH_BASE_ENV=${base_env}
+}
+
 # Beginning of function definitions
 
 # TODO Do we leave these arrays here or move it to the config file?
@@ -129,8 +148,6 @@ declare -A genesis_defaults=(
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
   [BOSH_ALIAS]="\${BASE_ENV}"
-  [BOSH_IP]="safe get secret/exodus/\${BASE_ENV}/bosh:url"
-  [BOSH_IP,type]="command"
 )
 
 declare -A pcf_vault_defaults=( 
@@ -155,6 +172,7 @@ declare -A custom_genesis_paths=(
   [CF_SKIP_SSL_VALIDATION]="secret/exodus/\${BASE_ENV}/cf:self-signed"
   [BOSH_CA_CERT]="\${VAULT_PATH}/bosh/ssl/ca:certificate"
   [BOSH_CLIENT_SECRET]="\${VAULT_PATH}/bosh/users/admin:password"
+  [BOSH_IP]="secret/exodus/\${BASE_ENV}/bosh:url"
 )
 
 #PCF_with_Vault
@@ -164,103 +182,141 @@ declare -A custom_pcf_vault_paths=(
   [BOSH_CLIENT_SECRET]="\${VAULT_PATH}/bosh/\${BASE_ENV}/BOSH_CLIENT_SECRET"
 ) 
 
-set_variable() {
-    declare base_variable=${1:?set_variable() - no environment variable name given   $(caller 0)}
-    declare display_name=${2:-${base_variable}}
-    declare required=${variables[${base_variable}]}
-    declare base_type=${BASE_TYPE,,}
-    declare -nl defaults="${base_type}_defaults"
-    declare value
-    declare -a array_value
-
-    if [[ -z ${required} ]]; then
-        debug  "set_variable" "${display_name} is not defined in the variables table"
-        return 2
-    fi
-
-    [[ ${!base_variable} == "replace-me" ]] && {
-      declare -gx ${base_variable}=""
-      debug "set_variable" "clearing ${base_variable}"
-    }
-
-    # look in environment
-
-    if [[ -n "${!base_variable:+"has value"}" ]]
-    then
-      return 0
-    else
-      debug "set_variable" "${display_name} has no value or is empty"
-    fi
-
-    # look in custom path
-
-    if [[ -n "${custom_variables[${base_variable}]}:+"has_custom_path"}" ]]
-    then
-      indirect_variable=${custom_variables[${base_variable}]}
-      declare  -nl custom_paths="custom_${base_type}_paths"
-      # TODO Can we test if nameref variable reference exists
-      declare indirect_path=${custom_paths[${base_variable}]}
-
-      debug "set_variable" "indirect_variable ${indirect_variable}"
-      debug "set_variable" "indirect_path ${indirect_path}"
-
-      if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" && "${!indirect_variable}" != "replace-me"  ]]
-      then
-        declare -a "array_value=("safe" "get" ${!indirect_variable})"
-        value=$(${array_value[@]})
-        declare -gx "${base_variable}=${value}"
-        return 0
-      elif [[ -n "${indirect_path}" ]]
-      then
-        declare -a "array_value=("safe" "get" ${indirect_path})"
-        value=$(${array_value[@]})
-        declare -gx "${base_variable}=${value}"
-        return 0
-      else
-        debug "set_variable" "No ${BASE_TYPE} paths found"
-      fi
-    else
-      debug "set_variable" "${display_name} has no custom paths"
-    fi
-
-    # deal with default values
-
-    [[ -z "${defaults[${base_variable}]+has_value}" ]] && {
-      [[ ${required} == "optional" ]] && return 0
-      [[ ${required} == "required" ]] && {
-        error "${display_name} is required to be given or configured"
-      }
-      return 1
-      
-    }
-    declare -a "array_value=(${defaults[${base_variable}]})"
-    value="${array_value[@]}"
-    [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
-    declare -gx "${base_variable}=${value[@]}"
+return_variable_by() {
+    declare variable=${1:?return_variable_by() - no environment variable name given   $(caller 0)}
+    declare return_type=${2:?return_variable_by() - no return value type   $(caller 0)}
+    declare value=${3:?return_variable_by() - no return value $(caller 0)}
+    declare variable_path=${4?return_variable_by() - no return value path $(caller 0)}
+    case ${return_type} in
+      environment)
+        declare -gx "${variable}=${value}"
+        ;;
+      value)
+        echo "${value}"
+        ;;
+      path)
+        declare -a "path_value=(${variable_path})"
+        echo "${path_value[*]}"
+        ;;
+      *)
+        fatal "ret_value_by() Invalid return type for ${variable}"
+        ;;
+    esac
     return 0
-  }
+}
 
-setup_environment() {
-  declare -i ret_code=0
+set_variable() {
+  declare base_variable=${1:?set_variable() - no environment variable name given   $(caller 0)}
+  declare return_type="${2:-environment}"
+  declare display_name=${3:-${base_variable}}
+  declare required=${variables[${base_variable}]}
+  declare base_type=${BASE_TYPE,,}
+  declare -nl defaults="${base_type}_defaults"
+  declare value
+  declare -a array_value
 
-  # read in configuration variables, when the file exits
-  # it will not exist in piplines that run containers for example.
-  if [[ ! "" == "$USE_ENV" ]] ;
-  then
-    if [[ -s "config.${USE_ENV}.env" ]]
-    then
-      source "config.${USE_ENV}.env"
-      debug "set_variable"  "Sourcing config.${USE_ENV}.env"
-    else
-      fatal "USE_ENV set to '${USE_ENV}' but config.${USE_ENV}.env not found"
-    fi
-  else
-    [[ -s "config.env" ]] && source "config.env"
+  if [[ -z ${required} ]]; then
+    debug  "set_variable" "${display_name} is not defined in the variables table"
+    return 2
   fi
 
-  : ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
-  : ${BASE_ENV:?"BASE_ENV must be set to a value"}
+  [[ ${!base_variable} == "replace-me" ]] && {
+    declare -gx ${base_variable}=""
+    debug "set_variable" "clearing ${base_variable}"
+  }
 
+  # look in environment
+
+  if [[ -n "${!base_variable:+"has value"}" ]]
+  then
+    declare "array_value=(${!base_variable})"
+    value="${array_value[@]}"
+    return_variable_by "${base_variable}" "${return_type}" "${value}" ""
+    return 0
+  else
+    debug "set_variable" "${display_name} has no value or is empty"
+  fi
+
+  # look in custom path
+
+  if [[ -n "${custom_variables[${base_variable}]}:+"has_custom_path"}" ]]
+  then
+    indirect_variable=${custom_variables[${base_variable}]}
+    declare  -nl custom_paths="custom_${base_type}_paths"
+    # TODO Can we test if nameref variable reference exists
+    declare indirect_path=${custom_paths[${base_variable}]}
+
+    debug "set_variable" "indirect_variable ${indirect_variable}"
+    debug "set_variable" "indirect_path ${indirect_path}"
+
+    if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" && "${!indirect_variable}" != "replace-me"  ]]
+    then
+      declare -a "array_value=("safe" "get" ${!indirect_variable})"
+      value=$(${array_value[@]})
+      return_variable_by "${base_variable}" "${return_type}" "${value}" "${indirect_variable}"
+      return 0
+    elif [[ -n "${indirect_path}" ]]
+    then
+      declare -a "array_value=("safe" "get" ${indirect_path})"
+      value=$(${array_value[@]})
+      return_variable_by "${base_variable}" "${return_type}" "${value}" "${indirect_path}"
+      return 0
+    else
+      debug "set_variable" "No ${BASE_TYPE} paths found"
+    fi
+  else
+    debug "set_variable" "${display_name} has no custom paths"
+  fi
+
+  # deal with default values
+
+  [[ -z "${defaults[${base_variable}]+has_value}" ]] && {
+    [[ ${required} == "optional" ]] && return 0
+    [[ ${required} == "required" ]] && {
+      error "${display_name} is required to be given or configured"
+    }
+    return 1
+    
+  }
+  declare -a "array_value=(${defaults[${base_variable}]})"
+  value="${array_value[@]}"
+  declare default_path=""
+  [[ "${defaults[${base_variable},type]}" == "command" ]] && {
+    value=$(${value})
+    default_path="${array_value[-1]}"
+  }
+  return_variable_by "${base_variable}" "${return_type}" "${value}" "${default_path}"
+  return 0
+}
+
+declare -A variable_paths
+
+setup_concourse_environment() {
+  local key
+  declare -i ret_code=0
+
+  step "Setting up the variable_paths"
+  variable_paths["BOSH_ALIAS"]=$(set_variable BOSH_ALIAS path) || ret_code=$?
+  variable_paths["BOSH_CA_CERT"]=$(set_variable BOSH_CA_CERT path) || ret_code=$?
+  variable_paths["BOSH_CLIENT"]=$(set_variable BOSH_CLIENT path) || ret_code=$?
+  variable_paths["BOSH_CLIENT_SECRET"]=$(set_variable BOSH_CLIENT_SECRET path) || ret_code=$?
+  variable_paths["BOSH_IP"]=$(set_variable BOSH_IP path) || ret_code=$?
+  variable_paths["CF_DOMAIN"]=$(set_variable CF_DOMAIN path) || ret_code=$?
+  variable_paths["CF_API"]=$(set_variable CF_API path) || ret_code=$?
+  variable_paths["CF_SKIP_SSL_VALIDATION"]=$(set_variable CF_SKIP_SSL_VALIDATION path) || ret_code=$?
+  variable_paths["CF_ORG"]=$(set_variable CF_ORG path) || ret_code=$?
+  variable_paths["CF_SPACE"]=$(set_variable CF_SPACE path) || ret_code=$?
+  variable_paths["CF_PASSWORD"]=$(set_variable CF_PASSWORD path) || ret_code=$?
+  variable_paths["CF_USERNAME"]=$(set_variable CF_USERNAME path) || ret_code=$?
+
+  for key in ${!variable_paths[@]}; do
+    debug "set_variable" "variable_paths[$key]='${variable_paths[$key]}'"
+  done
+  return ${ret_code}
+}
+
+setup_command_environment() {
+  declare -i ret_code=0
   step "Setting up the environment"
   set_variable BOSH_ALIAS             || ret_code=$?
   set_variable BOSH_CA_CERT           || ret_code=$?
@@ -276,11 +332,48 @@ setup_environment() {
   set_variable CF_USERNAME            || ret_code=$?
 
   if is_lh_debug_enabled "set_variable"; then
-    export | grep -E "CF_|BOSH_|LH_|VAULT_" | while read -r line; do
+    export | grep -E "CF_|BOSH_|LH_|VAULT_|BASE_" | while read -r line; do
       debug  "set_variable" "${line}"
     done
   fi
+  return ${ret_code}
+}
+
+setup_environment() {
+  declare action=${1:?setup_environment() - no action specified   $(caller 0)}
+  declare action_usage=${1:?setup_environment() - no action usage_function specified   $(caller 0)}
+
+  declare -i ret_code=0
+
+  # read in configuration variables, when the file exits
+  # it will not exist in piplines that run containers for example.
+  if [[ ! "" == "$LH_BASE_ENV" ]] ;
+  then
+    if [[ -s "config.${LH_BASE_ENV}.env" ]]
+    then
+      source "config.${LH_BASE_ENV}.env"
+      debug "set_variable"  "Sourcing config.${LH_BASE_ENV}.env"
+      [[ -z "${BASE_ENV}" || -z "${LH_BASE_ENV}" || "${BASE_ENV}" != "${LH_BASE_ENV}" ]] && 
+        fatal "The command line environment does not match the BASE_ENV in config.${LH_BASE_ENV}.env"
+    else
+      fatal "BASE_ENV set to '${LH_BASE_ENV}' but config.${LH_BASE_ENV}.env not found"
+    fi
+  else
+    [[ -s "config.env" ]] && source "config.env"
+  fi
+
+  : ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
+  : ${BASE_ENV:?"BASE_ENV must be set to a value"}
+
+  if [[ ${action} == 'repipe' ]]; then
+    setup_concourse_environment
+  else
+    setup_command_environment
+  fi
+  ret_code=$?
+
   debug  "set_variable" "setup_environment() rc_code $ret_code"
+
   return $ret_code
 }
 
@@ -1021,19 +1114,27 @@ do_help_cmd() {
 }
 
 perform_action() {
-  local setup=$1
-  local action=$2
-  local action_usage=$3
-  shift;shift;shift
+  local cmd=$1
+  local setup=$2
+  local action=$3
+  local action_usage=$4
+  shift 4
   if help_arg_passed "$@"; then
     ${action_usage} 0
   fi
   (( setup > 0 )) && initialize_environment
-  (( setup > 1 )) && setup_environment
+  (( setup > 1 )) && {
+    initialize_BASE_ENV "${cmd}" "${action_usage}" "$1"
+    shift
+  }
+  (( setup > 2 )) && {
+    if ! setup_environment ${cmd} "${action_usage}"; then
+      fatal "Variable setup failed"
+    fi
+  }
   ${action} "$@"
   exit $?
 }
-
 
 # End of function definition section
 
@@ -1043,6 +1144,7 @@ perform_action() {
 
 while (( $# > 0 ))
 do
+  declare action="$1"
   case "$1" in
     -d)
       shift
@@ -1064,39 +1166,39 @@ do
       ;;
     help|-h|--help)
       shift
-      perform_action 0 do_help_cmd help_usage "$@"
+      perform_action $action 0 do_help_cmd help_usage "$@"
       ;;
     new)
       shift
-      perform_action 0 new_env new_usage "$@"
+      perform_action $action 0 new_env new_usage "$@"
       ;;
     check)
       shift
-      perform_action 0 check check_usage "$@"
+      perform_action $action 0 check check_usage "$@"
       ;;
     init)
       shift
-      perform_action 1 do_init init_usage "$@"
+      perform_action $action 1 do_init init_usage "$@"
       ;;
     login)
       shift
-      perform_action 2 do_login login_usage "$@"
+      perform_action $action 3 do_login login_usage "$@"
       ;;
     logout)
       shift
-      perform_action 2 do_logout logout_usage "$@"
+      perform_action $action 3 do_logout logout_usage "$@"
       ;;
     repipe)
       shift
-      perform_action 2 do_repipe repipe_usage "$@"
-      ;;
-    test)
-      shift
-      perform_action 2 do_test test_usage "$@"
+      perform_action $action 3 do_repipe repipe_usage "$@"
       ;;
     run)
       shift
-      perform_action 2 do_run run_usage "$@"
+      perform_action $action 3 do_run run_usage "$@"
+      ;;
+    test)
+      shift
+      perform_action $action 3 do_test test_usage "$@"
       ;;
     *)
       error "Invalid command '$1'"
