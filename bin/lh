@@ -182,28 +182,7 @@ declare -A custom_pcf_vault_paths=(
   [BOSH_CLIENT_SECRET]="\${VAULT_PATH}/bosh/\${BASE_ENV}/BOSH_CLIENT_SECRET"
 ) 
 
-return_variable_by() {
-    declare variable=${1:?return_variable_by() - no environment variable name given   $(caller 0)}
-    declare return_type=${2:?return_variable_by() - no return value type   $(caller 0)}
-    declare value=${3:?return_variable_by() - no return value $(caller 0)}
-    declare variable_path=${4?return_variable_by() - no return value path $(caller 0)}
-    case ${return_type} in
-      environment)
-        declare -gx "${variable}=${value}"
-        ;;
-      value)
-        echo "${value}"
-        ;;
-      path)
-        declare -a "path_value=(${variable_path})"
-        echo "${path_value[*]}"
-        ;;
-      *)
-        fatal "ret_value_by() Invalid return type for ${variable}"
-        ;;
-    esac
-    return 0
-}
+declare -A pipeline_variables
 
 set_variable() {
   declare base_variable=${1:?set_variable() - no environment variable name given   $(caller 0)}
@@ -229,9 +208,12 @@ set_variable() {
 
   if [[ -n "${!base_variable:+"has value"}" ]]
   then
-    declare "array_value=(${!base_variable})"
-    value="${array_value[@]}"
-    return_variable_by "${base_variable}" "${return_type}" "${value}" ""
+    declare -a "array_value=(${!base_variable})"
+    value="${array_value[*]}"
+    if [[ ${return_type} == "path" ]]; then
+      pipeline_variables["${base_variable}"]=${value}
+      pipeline_variables["${base_variable},type"]="value"
+    fi
     return 0
   else
     debug "set_variable" "${display_name} has no value or is empty"
@@ -251,15 +233,27 @@ set_variable() {
 
     if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" && "${!indirect_variable}" != "replace-me"  ]]
     then
-      declare -a "array_value=("safe" "get" ${!indirect_variable})"
-      value=$(${array_value[@]})
-      return_variable_by "${base_variable}" "${return_type}" "${value}" "${indirect_variable}"
+      if [[ ${return_type} == "path" ]]; then
+        declare -a "array_value=(${!indirect_variable})"
+        value="${array_value[*]}"
+        pipeline_variables["${base_variable}"]=${value}
+        pipeline_variables["${base_variable},type"]="path"
+      else
+        declare -a "array_value=('safe' 'get' ${!indirect_variable})"
+        declare -gx "${base_variable}=$(${array_value[@]})"
+      fi
       return 0
     elif [[ -n "${indirect_path}" ]]
     then
-      declare -a "array_value=("safe" "get" ${indirect_path})"
-      value=$(${array_value[@]})
-      return_variable_by "${base_variable}" "${return_type}" "${value}" "${indirect_path}"
+      if [[ ${return_type} == "path" ]]; then
+        declare -a "array_value=(${indirect_path})"
+        value="${array_value[*]}"
+        pipeline_variables["${base_variable}"]="${value}"
+        pipeline_variables["${base_variable},type"]="path"
+      else
+        declare -a "array_value=('safe' 'get' ${indirect_path})"
+        declare -gx "${base_variable}=$(${array_value[@]})"
+      fi
       return 0
     else
       debug "set_variable" "No ${BASE_TYPE} paths found"
@@ -276,67 +270,25 @@ set_variable() {
       error "${display_name} is required to be given or configured"
     }
     return 1
-    
   }
+
+  # NOTE Assumes last command parameter is the path for commands
+
   declare -a "array_value=(${defaults[${base_variable}]})"
   value="${array_value[@]}"
-  declare default_path=""
-  [[ "${defaults[${base_variable},type]}" == "command" ]] && {
-    value=$(${value})
-    default_path="${array_value[-1]}"
-  }
-  return_variable_by "${base_variable}" "${return_type}" "${value}" "${default_path}"
-  return 0
-}
-
-declare -A variable_paths
-
-setup_concourse_environment() {
-  local key
-  declare -i ret_code=0
-
-  step "Setting up the variable_paths"
-  variable_paths["BOSH_ALIAS"]=$(set_variable BOSH_ALIAS path) || ret_code=$?
-  variable_paths["BOSH_CA_CERT"]=$(set_variable BOSH_CA_CERT path) || ret_code=$?
-  variable_paths["BOSH_CLIENT"]=$(set_variable BOSH_CLIENT path) || ret_code=$?
-  variable_paths["BOSH_CLIENT_SECRET"]=$(set_variable BOSH_CLIENT_SECRET path) || ret_code=$?
-  variable_paths["BOSH_IP"]=$(set_variable BOSH_IP path) || ret_code=$?
-  variable_paths["CF_DOMAIN"]=$(set_variable CF_DOMAIN path) || ret_code=$?
-  variable_paths["CF_API"]=$(set_variable CF_API path) || ret_code=$?
-  variable_paths["CF_SKIP_SSL_VALIDATION"]=$(set_variable CF_SKIP_SSL_VALIDATION path) || ret_code=$?
-  variable_paths["CF_ORG"]=$(set_variable CF_ORG path) || ret_code=$?
-  variable_paths["CF_SPACE"]=$(set_variable CF_SPACE path) || ret_code=$?
-  variable_paths["CF_PASSWORD"]=$(set_variable CF_PASSWORD path) || ret_code=$?
-  variable_paths["CF_USERNAME"]=$(set_variable CF_USERNAME path) || ret_code=$?
-
-  for key in ${!variable_paths[@]}; do
-    debug "set_variable" "variable_paths[$key]='${variable_paths[$key]}'"
-  done
-  return ${ret_code}
-}
-
-setup_command_environment() {
-  declare -i ret_code=0
-  step "Setting up the environment"
-  set_variable BOSH_ALIAS             || ret_code=$?
-  set_variable BOSH_CA_CERT           || ret_code=$?
-  set_variable BOSH_CLIENT            || ret_code=$?
-  set_variable BOSH_CLIENT_SECRET     || ret_code=$?
-  set_variable BOSH_IP                || ret_code=$?
-  set_variable CF_DOMAIN              || ret_code=$?
-  set_variable CF_API                 || ret_code=$?
-  set_variable CF_SKIP_SSL_VALIDATION || ret_code=$?
-  set_variable CF_ORG                 || ret_code=$?
-  set_variable CF_SPACE               || ret_code=$?
-  set_variable CF_PASSWORD            || ret_code=$?
-  set_variable CF_USERNAME            || ret_code=$?
-
-  if is_lh_debug_enabled "set_variable"; then
-    export | grep -E "CF_|BOSH_|LH_|VAULT_|BASE_" | while read -r line; do
-      debug  "set_variable" "${line}"
-    done
+  if [[ ${return_type} == "path" ]]; then
+    if [[ ${defaults[$base_variable,type]} == "command" ]]; then
+      pipeline_variables["${base_variable}"]="${array_value[-1]}"
+      pipeline_variables["${base_variable},type"]="path"
+    else
+      pipeline_variables["${base_variable}"]="${value}"
+      pipeline_variables["${base_variable},type"]="value"
+    fi
+  else
+    [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
+    declare -gx "${base_variable}=${value}"
   fi
-  return ${ret_code}
+  return 0
 }
 
 setup_environment() {
@@ -366,12 +318,35 @@ setup_environment() {
   : ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
   : ${BASE_ENV:?"BASE_ENV must be set to a value"}
 
-  if [[ ${action} == 'repipe' ]]; then
-    setup_concourse_environment
-  else
-    setup_command_environment
+  declare which_variable="environment"
+  [[ ${action} == 'repipe' ]] && which_variable="path"
+
+  step "Setting up the environment"
+  set_variable BOSH_ALIAS ${which_variable}             || ret_code=$?
+  set_variable BOSH_CA_CERT ${which_variable}           || ret_code=$?
+  set_variable BOSH_CLIENT ${which_variable}            || ret_code=$?
+  set_variable BOSH_CLIENT_SECRET ${which_variable}     || ret_code=$?
+  set_variable BOSH_IP ${which_variable}                || ret_code=$?
+  set_variable CF_DOMAIN ${which_variable}              || ret_code=$?
+  set_variable CF_API ${which_variable}                 || ret_code=$?
+  set_variable CF_SKIP_SSL_VALIDATION ${which_variable} || ret_code=$?
+  set_variable CF_ORG ${which_variable}                 || ret_code=$?
+  set_variable CF_SPACE ${which_variable}               || ret_code=$?
+  set_variable CF_PASSWORD ${which_variable}            || ret_code=$?
+  set_variable CF_USERNAME ${which_variable}            || ret_code=$?
+
+  if is_lh_debug_enabled "set_variable"; then
+    if [[ ${which_variable} == "environment" ]]; then
+
+      export | grep -E "CF_|BOSH_|LH_|VAULT_|BASE_" | while read -r line; do
+        debug  "set_variable" "${line}"
+      done
+    else
+      for key in $(IFS="\n " sort <<<"${!pipeline_variables[*]}"); do
+        debug "set_variable" "pipeline_variables[$key]='${pipeline_variables[$key]}'"
+      done
+    fi
   fi
-  ret_code=$?
 
   debug  "set_variable" "setup_environment() rc_code $ret_code"
 
