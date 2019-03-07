@@ -27,13 +27,26 @@ echo "Working in $(pwd)"
 need_command spruce "https://github.com/geofffranks/spruce/releases"
 need_command jq
 
-# Allow for target-specific settings
-settings_file="$(ls -1 settings.yml ${CONCOURSE_TARGET:+"settings-${CONCOURSE_TARGET}.yml"} 2>/dev/null | tail -n1)"
-if [[ -z "$settings_file" ]]; then
-  echo >&2 "Missing local settings in ci/settings.yml${CONCOURSE_TARGET:+" or ci/settings-${CONCOURSE_TARGET}.yml"}!"
+if [[ $# < 1 ]]
+then
+  echo >&2 "Usage:"
+  echo >&2 "  repipe environment_name"
   exit 1
 fi
 
+ENVIRONMENT_NAME=$1
+
+## Allow for target-specific settings
+#settings_file="$(ls -1 settings.yml ${CONCOURSE_TARGET:+"settings-${CONCOURSE_TARGET}.yml"} 2>/dev/null | tail -n1)"
+#if [[ -z "$settings_file" ]]; then
+#  echo >&2 "Missing local settings in ci/settings.yml${CONCOURSE_TARGET:+" or ci/settings-${CONCOURSE_TARGET}.yml"}!"
+#  exit 1
+#fi
+settings_file="settings-${ENVIRONMENT_NAME}.yml"
+if [[ ! -r "$settings_file" ]]; then
+  echo >&2 "Missing local settings in ci/settings-${ENVIRONMENT_NAME}.yml"
+  exit 1
+fi
 echo >&2 "Using settings found in ${settings_file}"
 
 set -e

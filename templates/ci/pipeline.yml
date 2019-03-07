@@ -15,7 +15,7 @@ meta:
   envname:  (( param "Please provide an environment name for bosh and the safe paths" ))
   target:   (( param "Please identify the name of the target Concourse CI" ))
   url:      (( param "Please specify the full url of the target Concourse CI" ))
-  pipeline: lighthouse
+  pipeline: (( concat "lighthouse-" meta.envname ))
 
   bosh:
     ip:    (( Param "Please provide the address of the BOSH director" ))
@@ -104,7 +104,7 @@ jobs:
           - { name: git, path: lighthouse }
         run:
           path: ./bin/lh
-          args:  [ login, cf ]
+          args:  [ login, (( grab meta.envname )), cf ]
           dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
@@ -115,6 +115,7 @@ jobs:
           BOSH_ENVIRONMENT: (( grab meta.envname ))
           BOSH_IP: (( grab meta.bosh.ip ))
           BASE_ENV: (( grab meta.envname ))
+          CF_PASSWORD: (( grab meta.cf.password ))
 - name: cf-orgs-test
   public: true
   plan:
@@ -135,7 +136,7 @@ jobs:
           - { name: git, path: lighthouse }
         run:
           path: ./bin/lh
-          args: [ run , tests/cf/orgs.sh ]
+          args: [ run , (( grab meta.envname )), cf/orgs.sh ]
           dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
@@ -146,6 +147,7 @@ jobs:
           BOSH_ENVIRONMENT: (( grab meta.envname ))
           BOSH_IP: (( grab meta.bosh.ip ))
           BASE_ENV: (( grab meta.envname ))
+          CF_PASSWORD: (( grab meta.cf.password ))
 - name: cf-spaces-test
   public: true
   plan:
@@ -197,7 +199,7 @@ jobs:
           - { name: git, path: lighthouse }
         run:
           path: ./bin/lh
-          args: [ run , tests/cf/apps.sh ]
+          args: [ run , (( grab meta.envname )) , cf/apps.sh ]
           dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
@@ -228,7 +230,7 @@ jobs:
           - { name: git, path: lighthouse }
         run:
           path: ./bin/lh
-          args: [ run , tests/cf/buildpacks.sh ]
+          args: [ run , (( grab meta.envname )) , cf/buildpacks.sh ]
           dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
@@ -290,7 +292,7 @@ jobs:
           - { name: git, path: lighthouse }
         run:
           path: ./bin/lh
-          args: [ test , bosh ]
+          args: [ test ,(( grab meta.envname )),  bosh ]
           dir: ./lighthouse
         params:
           VAULT_ADDR: (( grab meta.vault.url ))
