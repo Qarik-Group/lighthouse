@@ -27,6 +27,7 @@ EOF
 is_lh_debug_enabled() {
   [[ -n ${LH_DEBUG+is_set} ]] && {
     for word in ${1/,/ }; do
+      # the trailing , is added by the enable function to allow concatenation to work
       [[ ",${LH_DEBUG}" == *,${word},* ]] && return 0
     done
   }
@@ -35,6 +36,7 @@ is_lh_debug_enabled() {
 is_lh_trace_enabled() {
   [[ -n ${LH_TRACE+is_set} ]] && {
     for word in ${1/,/ }; do
+      # the trailing , is added by the enable function to allow concatenation to work
       [[ ",${LH_TRACE}" == *,${word},* ]] && return 0
     done
   }
@@ -293,7 +295,6 @@ set_variable() {
 
 setup_environment() {
   declare action=${1:?setup_environment() - no action specified   $(caller 0)}
-  declare action_usage=${1:?setup_environment() - no action usage_function specified   $(caller 0)}
 
   declare -i ret_code=0
 
@@ -1104,7 +1105,7 @@ perform_action() {
     shift
   }
   (( setup > 2 )) && {
-    if ! setup_environment ${cmd} "${action_usage}"; then
+    if ! setup_environment ${cmd}; then
       fatal "Variable setup failed"
     fi
   }
