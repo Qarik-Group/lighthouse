@@ -25,11 +25,21 @@ EOF
 }
 
 is_lh_debug_enabled() {
-  [[ -n ${LH_DEBUG+is_set} && ",${LH_DEBUG}" == *,$1,* ]] 
+  [[ -n ${LH_DEBUG+is_set} ]] && {
+    for word in ${1/,/ }; do
+      # the trailing , is added by the enable function to allow concatenation to work
+      [[ ",${LH_DEBUG}" == *,${word},* ]] && return 0
+    done
+  }
 }
 
 is_lh_trace_enabled() {
-  [[ -n ${LH_TRACE+is_set} && ",${LH_TRACE}" == *,$1,* ]] 
+  [[ -n ${LH_TRACE+is_set} ]] && {
+    for word in ${1/,/ }; do
+      # the trailing , is added by the enable function to allow concatenation to work
+      [[ ",${LH_TRACE}" == *,${word},* ]] && return 0
+    done
+  }
 }
 
 debug() {
@@ -93,6 +103,25 @@ initialize_environment() {
   add_lib_paths_to_PATH
 }
 
+declare LH_BASE_ENV
+
+initialize_BASE_ENV() {
+  declare cmd=${1?initialize_BASE_ENV() - Missing command keyword   $(caller 0)}
+  declare action_usage=${2?initialize_BASE_ENV() - no command usage function   $(caller 0)}
+  declare base_env=${3?initialize_BASE_ENV() - no command usage function   $(caller 0)}
+  [[ -z "${base_env}" ]] && {
+    error "Missing environment parameter"
+    ${action_usage}
+  }
+
+  [[ ",bosh,cf,safe,uaa," == *,${base_env},* ]] && {
+    error "Ambiguous or Missing environment parameter"
+    ${action_usage}
+  }
+  
+  declare -gx LH_BASE_ENV=${base_env}
+}
+
 # Beginning of function definitions
 
 # TODO Do we leave these arrays here or move it to the config file?
@@ -121,8 +150,6 @@ declare -A genesis_defaults=(
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
   [BOSH_ALIAS]="\${BASE_ENV}"
-  [BOSH_IP]="safe get secret/exodus/\${BASE_ENV}/bosh:url"
-  [BOSH_IP,type]="command"
 )
 
 declare -A pcf_vault_defaults=( 
@@ -147,6 +174,7 @@ declare -A custom_genesis_paths=(
   [CF_SKIP_SSL_VALIDATION]="secret/exodus/\${BASE_ENV}/cf:self-signed"
   [BOSH_CA_CERT]="\${VAULT_PATH}/bosh/ssl/ca:certificate"
   [BOSH_CLIENT_SECRET]="\${VAULT_PATH}/bosh/users/admin:password"
+  [BOSH_IP]="secret/exodus/\${BASE_ENV}/bosh:url"
 )
 
 #PCF_with_Vault
@@ -156,123 +184,173 @@ declare -A custom_pcf_vault_paths=(
   [BOSH_CLIENT_SECRET]="\${VAULT_PATH}/bosh/\${BASE_ENV}/BOSH_CLIENT_SECRET"
 ) 
 
+declare -A pipeline_variables
+
 set_variable() {
-    declare base_variable=${1:?set_variable() - no environment variable name given   $(caller 0)}
-    declare display_name=${2:-${base_variable}}
-    declare required=${variables[${base_variable}]}
-    declare base_type=${BASE_TYPE,,}
-    declare -nl defaults="${base_type}_defaults"
-    declare value
-    declare -a array_value
+  declare base_variable=${1:?set_variable() - no environment variable name given   $(caller 0)}
+  declare return_type="${2:-environment}"
+  declare display_name=${3:-${base_variable}}
+  declare required=${variables[${base_variable}]}
+  declare base_type=${BASE_TYPE,,}
+  declare -nl defaults="${base_type}_defaults"
+  declare value
+  declare -a array_value
 
-    if [[ -z ${required} ]]; then
-        debug  "set_variable" "${display_name} is not defined in the variables table"
-        return 2
-    fi
+  if [[ -z ${required} ]]; then
+    debug  "set_variable" "${display_name} is not defined in the variables table"
+    return 2
+  fi
 
-    [[ ${!base_variable} == "replace-me" ]] && {
-      declare -gx ${base_variable}=""
-      debug "set_variable" "clearing ${base_variable}"
-    }
-
-    # look in environment
-
-    if [[ -n "${!base_variable:+"has value"}" ]]
-    then
-      return 0
-    else
-      debug "set_variable" "${display_name} has no value or is empty"
-    fi
-
-    # look in custom path
-
-    if [[ -n "${custom_variables[${base_variable}]}:+"has_custom_path"}" ]]
-    then
-      indirect_variable=${custom_variables[${base_variable}]}
-      declare  -nl custom_paths="custom_${base_type}_paths"
-      # TODO Can we test if nameref variable reference exists
-      declare indirect_path=${custom_paths[${base_variable}]}
-
-      debug "set_variable" "indirect_variable ${indirect_variable}"
-      debug "set_variable" "indirect_path ${indirect_path}"
-
-      if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" && "${!indirect_variable}" != "replace-me"  ]]
-      then
-        declare -a "array_value=("safe" "get" ${!indirect_variable})"
-        value=$(${array_value[@]})
-        declare -gx "${base_variable}=${value}"
-        return 0
-      elif [[ -n "${indirect_path}" ]]
-      then
-        declare -a "array_value=("safe" "get" ${indirect_path})"
-        value=$(${array_value[@]})
-        declare -gx "${base_variable}=${value}"
-        return 0
-      else
-        debug "set_variable" "No ${BASE_TYPE} paths found"
-      fi
-    else
-      debug "set_variable" "${display_name} has no custom paths"
-    fi
-
-    # deal with default values
-
-    [[ -z "${defaults[${base_variable}]+has_value}" ]] && {
-      [[ ${required} == "optional" ]] && return 0
-      [[ ${required} == "required" ]] && {
-        error "${display_name} is required to be given or configured"
-      }
-      return 1
-      
-    }
-    declare -a "array_value=(${defaults[${base_variable}]})"
-    value="${array_value[@]}"
-    [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
-    declare -gx "${base_variable}=${value[@]}"
-    return 0
+  [[ ${!base_variable} == "replace-me" ]] && {
+    declare -gx ${base_variable}=""
+    debug "set_variable" "clearing ${base_variable}"
   }
 
+  # look in environment
+
+  if [[ -n "${!base_variable:+"has value"}" ]]
+  then
+    declare -a "array_value=(${!base_variable})"
+    value="${array_value[*]}"
+    if [[ ${return_type} == "path" ]]; then
+      pipeline_variables["${base_variable}"]=${value}
+      pipeline_variables["${base_variable},type"]="value"
+    fi
+    return 0
+  else
+    debug "set_variable" "${display_name} has no value or is empty"
+  fi
+
+  # look in custom path
+
+  if [[ -n "${custom_variables[${base_variable}]}:+"has_custom_path"}" ]]
+  then
+    indirect_variable=${custom_variables[${base_variable}]}
+    declare  -nl custom_paths="custom_${base_type}_paths"
+    # TODO Can we test if nameref variable reference exists
+    declare indirect_path=${custom_paths[${base_variable}]}
+
+    debug "set_variable" "indirect_variable ${indirect_variable}"
+    debug "set_variable" "indirect_path ${indirect_path}"
+
+    if [[ -n "${indirect_variable}" && -n "${!indirect_variable}" && "${!indirect_variable}" != "replace-me"  ]]
+    then
+      if [[ ${return_type} == "path" ]]; then
+        declare -a "array_value=(${!indirect_variable})"
+        value="${array_value[*]}"
+        pipeline_variables["${base_variable}"]=${value}
+        pipeline_variables["${base_variable},type"]="path"
+      else
+        declare -a "array_value=('safe' 'get' ${!indirect_variable})"
+        declare -gx "${base_variable}=$(${array_value[@]})"
+      fi
+      return 0
+    elif [[ -n "${indirect_path}" ]]
+    then
+      if [[ ${return_type} == "path" ]]; then
+        declare -a "array_value=(${indirect_path})"
+        value="${array_value[*]}"
+        pipeline_variables["${base_variable}"]="${value}"
+        pipeline_variables["${base_variable},type"]="path"
+      else
+        declare -a "array_value=('safe' 'get' ${indirect_path})"
+        declare -gx "${base_variable}=$(${array_value[@]})"
+      fi
+      return 0
+    else
+      debug "set_variable" "No ${BASE_TYPE} paths found"
+    fi
+  else
+    debug "set_variable" "${display_name} has no custom paths"
+  fi
+
+  # deal with default values
+
+  [[ -z "${defaults[${base_variable}]+has_value}" ]] && {
+    [[ ${required} == "optional" ]] && return 0
+    [[ ${required} == "required" ]] && {
+      error "${display_name} is required to be given or configured"
+    }
+    return 1
+  }
+
+  # NOTE Assumes last command parameter is the path for commands
+
+  declare -a "array_value=(${defaults[${base_variable}]})"
+  value="${array_value[@]}"
+  if [[ ${return_type} == "path" ]]; then
+    if [[ ${defaults[$base_variable,type]} == "command" ]]; then
+      pipeline_variables["${base_variable}"]="${array_value[-1]}"
+      pipeline_variables["${base_variable},type"]="path"
+    else
+      pipeline_variables["${base_variable}"]="${value}"
+      pipeline_variables["${base_variable},type"]="value"
+    fi
+  else
+    [[ "${defaults[${base_variable},type]}" == "command" ]] && value=$(${value})
+    declare -gx "${base_variable}=${value}"
+  fi
+  return 0
+}
+
 setup_environment() {
+  declare action=${1:?setup_environment() - no action specified   $(caller 0)}
+
   declare -i ret_code=0
 
   # read in configuration variables, when the file exits
   # it will not exist in piplines that run containers for example.
-  if [[ ! "" == "$USE_ENV" ]] ;
+  if [[ ! "" == "$LH_BASE_ENV" ]] ;
   then
-    if [[ -s "config.${USE_ENV}.env" ]]
+    if [[ -s "config.${LH_BASE_ENV}.env" ]]
     then
-      source "config.${USE_ENV}.env"
-      debug "set_variable"  "Sourcing config.${USE_ENV}.env"
+      source "config.${LH_BASE_ENV}.env"
+      debug "set_variable"  "Sourcing config.${LH_BASE_ENV}.env"
+      [[ -z "${BASE_ENV}" || -z "${LH_BASE_ENV}" || "${BASE_ENV}" != "${LH_BASE_ENV}" ]] && 
+        fatal "The command line environment parameter does not match the BASE_ENV in config.${LH_BASE_ENV}.env"
     else
-      fatal "USE_ENV set to '${USE_ENV}' but config.${USE_ENV}.env not found"
+      fatal "BASE_ENV set to '${LH_BASE_ENV}' but config.${LH_BASE_ENV}.env not found"
     fi
   else
-    [[ -s "config.env" ]] && source "config.env"
+    fatal "Missing the environment parameter from the lighthouse command"
+    # [[ -s "config.env" ]] && source "config.env"
   fi
 
   : ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
   : ${BASE_ENV:?"BASE_ENV must be set to a value"}
 
+  declare which_variable="environment"
+  [[ ${action} == 'repipe' ]] && which_variable="path"
+
   step "Setting up the environment"
-  set_variable BOSH_ALIAS             || ret_code=$?
-  set_variable BOSH_CA_CERT           || ret_code=$?
-  set_variable BOSH_CLIENT            || ret_code=$?
-  set_variable BOSH_CLIENT_SECRET     || ret_code=$?
-  set_variable BOSH_IP                || ret_code=$?
-  set_variable CF_DOMAIN              || ret_code=$?
-  set_variable CF_API                 || ret_code=$?
-  set_variable CF_SKIP_SSL_VALIDATION || ret_code=$?
-  set_variable CF_ORG                 || ret_code=$?
-  set_variable CF_SPACE               || ret_code=$?
-  set_variable CF_PASSWORD            || ret_code=$?
-  set_variable CF_USERNAME            || ret_code=$?
+  set_variable BOSH_ALIAS ${which_variable}             || ret_code=$?
+  set_variable BOSH_CA_CERT ${which_variable}           || ret_code=$?
+  set_variable BOSH_CLIENT ${which_variable}            || ret_code=$?
+  set_variable BOSH_CLIENT_SECRET ${which_variable}     || ret_code=$?
+  set_variable BOSH_IP ${which_variable}                || ret_code=$?
+  set_variable CF_DOMAIN ${which_variable}              || ret_code=$?
+  set_variable CF_API ${which_variable}                 || ret_code=$?
+  set_variable CF_SKIP_SSL_VALIDATION ${which_variable} || ret_code=$?
+  set_variable CF_ORG ${which_variable}                 || ret_code=$?
+  set_variable CF_SPACE ${which_variable}               || ret_code=$?
+  set_variable CF_PASSWORD ${which_variable}            || ret_code=$?
+  set_variable CF_USERNAME ${which_variable}            || ret_code=$?
 
   if is_lh_debug_enabled "set_variable"; then
-    export | grep -E "CF_|BOSH_|LH_|VAULT_" | while read -r line; do
-      debug  "set_variable" "${line}"
-    done
+    if [[ ${which_variable} == "environment" ]]; then
+
+      export | grep -E "CF_|BOSH_|LH_|VAULT_|BASE_"| sort | while read -r line; do
+        debug  "set_variable" "${line}"
+      done
+    else
+      for key in $(printf "%s\n" "${!pipeline_variables[@]}"| sort); do
+        debug "set_variable" "pipeline_variables[$key]='${pipeline_variables[$key]}'"
+      done
+    fi
   fi
+
   debug  "set_variable" "setup_environment() rc_code $ret_code"
+
   return $ret_code
 }
 
@@ -781,7 +859,10 @@ popd
 
 # TODO Do we extend init to create more than one environment at a time
 do_init() {
-  (( $# <  1 )) && init_usage
+  (( $# <  1 )) && {
+    error "Missing the working directory parameter" 
+    init_usage
+  }
   new_directory="$1"
   echo "Creating directory ${new_directory}"
   mkdir ${new_directory} || return $?
@@ -887,7 +968,7 @@ enable_lh_trace() {
 check_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 check"
+  echo "Usage: $(basename $0) check"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -897,7 +978,7 @@ check_usage() {
 help_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 help"
+  echo "Usage: $(basename $0) help"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -907,7 +988,7 @@ help_usage() {
 init_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: ${0} init"
+  echo "Usage: $(basename $0) init"
   echo "  Create a directory and copy over the data files to the default"
   ${return_by} ${rc}
 }
@@ -915,7 +996,7 @@ init_usage() {
 login_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 login"
+  echo "Usage: $(basename $0) login"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -925,7 +1006,7 @@ login_usage() {
 logout_usage(){
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 logout"
+  echo "Usage: $(basename $0) logout"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -935,7 +1016,7 @@ logout_usage(){
 new_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 new environment"
+  echo "Usage: $(basename $0) new environment"
   echo "  Create a config.environment.env and copy over the data files to the environment subdirectory"
   ${return_by} ${rc}
 }
@@ -943,7 +1024,7 @@ new_usage() {
 repipe_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 repipe"
+  echo "Usage: $(basename $0) repipe"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -953,7 +1034,7 @@ repipe_usage() {
 run_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 run [options] path1 [path2] [path3] ... [pathN]"
+  echo "Usage: $(basename $0) run [options] path1 [path2] [path3] ... [pathN]"
   echo "  Takes one or more paths to test scripts and runs them if possible."
   echo "  The path will be 'group/test.sh' such as 'cf/orgs.sh'"
   echo "  Will login to each component unless instructed otherwise."
@@ -965,7 +1046,7 @@ run_usage() {
 test_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 test  environment"
+  echo "Usage: $(basename $0) test  environment"
   echo "  run all tests."
   echo "  test bosh: only the bosh tests."
   echo "    test cf: only cloud foundry tests."
@@ -976,6 +1057,7 @@ usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
   echo "Lighthouse, near friendly shores."
+  echo "Usage: $(basename $0) [program options] command [command parameters]"
   echo "  check  -- check for dependencies or signed in."
   echo "  help   -- Get help on one or more commands"
   echo "  init   -- Create config directory for addding lighthouse environment"
@@ -993,7 +1075,7 @@ do_help_cmd() {
   (( $# == 0 )) && usage 0
   for cmd in "$@"
   do
-    func=${cmd}_usage
+    func="${cmd}_usage"
     if [[ $(type -t ${func}) != "function" ]]
     then
       error "${cmd}: no such command exists"
@@ -1013,19 +1095,27 @@ do_help_cmd() {
 }
 
 perform_action() {
-  local setup=$1
-  local action=$2
-  local action_usage=$3
-  shift;shift;shift
-  if help_arg_passed "$@"; then
+  local cmd=$1
+  local setup=$2
+  local action=$3
+  local action_usage=$4
+  shift 4
+  if [[ "${cmd}" != "help" ]] && help_arg_passed "$@"; then
     ${action_usage} 0
   fi
   (( setup > 0 )) && initialize_environment
-  (( setup > 1 )) && setup_environment
+  (( setup > 1 )) && {
+    initialize_BASE_ENV "${cmd}" "${action_usage}" "$1"
+    shift
+  }
+  (( setup > 2 )) && {
+    if ! setup_environment ${cmd}; then
+      fatal "Variable setup failed"
+    fi
+  }
   ${action} "$@"
   exit $?
 }
-
 
 # End of function definition section
 
@@ -1035,6 +1125,7 @@ perform_action() {
 
 while (( $# > 0 ))
 do
+  declare action="$1"
   case "$1" in
     -d)
       shift
@@ -1056,39 +1147,39 @@ do
       ;;
     help|-h|--help)
       shift
-      perform_action 0 do_help_cmd help_usage "$@"
+      perform_action $action 0 do_help_cmd help_usage "$@"
       ;;
     new)
       shift
-      perform_action 0 new_env new_usage "$@"
+      perform_action $action 0 new_env new_usage "$@"
       ;;
     check)
       shift
-      perform_action 0 check check_usage "$@"
+      perform_action $action 0 check check_usage "$@"
       ;;
     init)
       shift
-      perform_action 1 do_init init_usage "$@"
+      perform_action $action 1 do_init init_usage "$@"
       ;;
     login)
       shift
-      perform_action 2 do_login login_usage "$@"
+      perform_action $action 3 do_login login_usage "$@"
       ;;
     logout)
       shift
-      perform_action 2 do_logout logout_usage "$@"
+      perform_action $action 3 do_logout logout_usage "$@"
       ;;
     repipe)
       shift
-      perform_action 2 do_repipe repipe_usage "$@"
-      ;;
-    test)
-      shift
-      perform_action 2 do_test test_usage "$@"
+      perform_action $action 3 do_repipe repipe_usage "$@"
       ;;
     run)
       shift
-      perform_action 2 do_run run_usage "$@"
+      perform_action $action 3 do_run run_usage "$@"
+      ;;
+    test)
+      shift
+      perform_action $action 3 do_test test_usage "$@"
       ;;
     *)
       error "Invalid command '$1'"
