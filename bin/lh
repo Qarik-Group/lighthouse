@@ -338,11 +338,11 @@ setup_environment() {
   if is_lh_debug_enabled "set_variable"; then
     if [[ ${which_variable} == "environment" ]]; then
 
-      export | grep -E "CF_|BOSH_|LH_|VAULT_|BASE_" | while read -r line; do
+      export | grep -E "CF_|BOSH_|LH_|VAULT_|BASE_"| sort | while read -r line; do
         debug  "set_variable" "${line}"
       done
     else
-      for key in $(IFS="\n " sort <<<"${!pipeline_variables[*]}"); do
+      for key in $(printf "%s\n" "${!pipeline_variables[@]}"| sort); do
         debug "set_variable" "pipeline_variables[$key]='${pipeline_variables[$key]}'"
       done
     fi
