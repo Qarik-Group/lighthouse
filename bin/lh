@@ -859,7 +859,10 @@ popd
 
 # TODO Do we extend init to create more than one environment at a time
 do_init() {
-  (( $# <  1 )) && init_usage
+  (( $# <  1 )) && {
+    error "Missing the working directory parameter" 
+    init_usage
+  }
   new_directory="$1"
   echo "Creating directory ${new_directory}"
   mkdir ${new_directory} || return $?
@@ -965,7 +968,7 @@ enable_lh_trace() {
 check_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 check"
+  echo "Usage: $(basename $0) check"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -975,7 +978,7 @@ check_usage() {
 help_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 help"
+  echo "Usage: $(basename $0) help"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -985,7 +988,7 @@ help_usage() {
 init_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: ${0} init"
+  echo "Usage: $(basename $0) init"
   echo "  Create a directory and copy over the data files to the default"
   ${return_by} ${rc}
 }
@@ -993,7 +996,7 @@ init_usage() {
 login_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 login"
+  echo "Usage: $(basename $0) login"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -1003,7 +1006,7 @@ login_usage() {
 logout_usage(){
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 logout"
+  echo "Usage: $(basename $0) logout"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -1013,7 +1016,7 @@ logout_usage(){
 new_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 new environment"
+  echo "Usage: $(basename $0) new environment"
   echo "  Create a config.environment.env and copy over the data files to the environment subdirectory"
   ${return_by} ${rc}
 }
@@ -1021,7 +1024,7 @@ new_usage() {
 repipe_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 repipe"
+  echo "Usage: $(basename $0) repipe"
   echo "TODO"
   echo "TODO"
   echo "TODO"
@@ -1031,7 +1034,7 @@ repipe_usage() {
 run_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 run [options] path1 [path2] [path3] ... [pathN]"
+  echo "Usage: $(basename $0) run [options] path1 [path2] [path3] ... [pathN]"
   echo "  Takes one or more paths to test scripts and runs them if possible."
   echo "  The path will be 'group/test.sh' such as 'cf/orgs.sh'"
   echo "  Will login to each component unless instructed otherwise."
@@ -1043,7 +1046,7 @@ run_usage() {
 test_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $0 test  environment"
+  echo "Usage: $(basename $0) test  environment"
   echo "  run all tests."
   echo "  test bosh: only the bosh tests."
   echo "    test cf: only cloud foundry tests."
@@ -1054,6 +1057,7 @@ usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
   echo "Lighthouse, near friendly shores."
+  echo "Usage: $(basename $0) [program options] command [command parameters]"
   echo "  check  -- check for dependencies or signed in."
   echo "  help   -- Get help on one or more commands"
   echo "  init   -- Create config directory for addding lighthouse environment"
@@ -1071,7 +1075,7 @@ do_help_cmd() {
   (( $# == 0 )) && usage 0
   for cmd in "$@"
   do
-    func=${cmd}_usage
+    func="${cmd}_usage"
     if [[ $(type -t ${func}) != "function" ]]
     then
       error "${cmd}: no such command exists"
@@ -1096,7 +1100,7 @@ perform_action() {
   local action=$3
   local action_usage=$4
   shift 4
-  if help_arg_passed "$@"; then
+  if [[ "${cmd}" != "help" ]] && help_arg_passed "$@"; then
     ${action_usage} 0
   fi
   (( setup > 0 )) && initialize_environment
