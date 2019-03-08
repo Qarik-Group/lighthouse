@@ -822,6 +822,19 @@ run_individual_test() {
   fi
 }
 
+generate_pipeline_string() {
+  declare base_variable=${1:?get_pipe_value() - no environment variable name given   $(caller 0)}
+
+  if [[ "path" == ${pipeline_variables[${base_variable},type]} ]]
+  then
+    echo "(( vault \"${pipeline_variables[$base_variable]}\" ))"
+  else
+    echo ${pipeline_variables[${base_variable}]}
+  fi
+
+  return 0 
+}
+
 do_repipe() {
   local ret_code=0
 
@@ -829,32 +842,55 @@ do_repipe() {
 
   step "Generating pipeline files."
 
-  pushd .
-  cd templates/ci
-  cat << EOF > settings.yml
+  mkdir -p .ci
+  cp ${LH_DIRECTORY}/templates/ci/repipe .ci/repipe
+  cp ${LH_DIRECTORY}/templates/ci/pipeline.yml .ci/pipeline.yml
+  cd .ci
+  
+  cat << EOF > settings-${BASE_ENV}.yml
 ---
 meta:
-  envname: ${BASE_ENV}
-  target:  ${CONCOURSE_TARGET}
-  url:     ${CONCOURSE_URL}
+  envname:  ${BASE_ENV}
+  target:   ${CONCOURSE_TARGET}
+  url:      ${CONCOURSE_URL}
+
+  basetype: ${BASE_TYPE}
   bosh:
-    ip: "${BOSH_IP}"
+    ip:             $(generate_pipeline_string BOSH_IP )
+    ca:             $(generate_pipeline_string BOSH_CA_CERT )
+    client:         $(generate_pipeline_string BOSH_CLIENT )
+    client_secret:  $(generate_pipeline_string BOSH_CLIENT_SECRET )
 
   vault:
     url:   ${VAULT_ADDR}
-    token: (( vault "secret/pipeline/vault:token" ))
+    token: "SKIP" # (( vault "secret/pipeline/vault:token" ))
     path:  (( concat "secret/" meta.envname ))  # Or override as needed
+    skip_verify: 1
 
-  github:
-    owner:  ${GITHUB_OWNER}
+  cf:
+    username: $(generate_pipeline_string CF_USERNAME)
+    password: $(generate_pipeline_string CF_PASSWORD)
+    skip_ssl: $(generate_pipeline_string CF_SKIP_SSL_VALIDATION)
+    api:      $(generate_pipeline_string CF_API)
+    org:      $(generate_pipeline_string CF_ORG)
+    space:    $(generate_pipeline_string CF_SPACE)
+
+  lighthouse_github:
+    owner:  starkandwayne
     repo:   lighthouse
     branch: master
     private_key:  (( vault "secret/pipelines/shared/github/genesis-bot:private" ))
 
+  configs_github:
+    owner:  krutten
+    repo:   lighthouse_configs
+    branch: master
+    private_key:  (( vault "secret/pipelines/shared/github/lighthouse-config-bot:private" ))
 EOF
 
-. ${LH_DIRECTORY}/templates/ci/repipe
-popd
+
+. repipe ${BASE_ENV}
+  popd
 }
 
 # TODO Do we extend init to create more than one environment at a time
