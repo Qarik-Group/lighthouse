@@ -503,6 +503,7 @@ do_test() {
 }
 
 do_run() {
+  declare return_code=1
   skip_login_arg_passed $@
   skip_login=$?
 
@@ -519,11 +520,13 @@ do_run() {
       *)
         echo "Running test $1"
         run_individual_test "$1"
+        return_code=$?
         ;;
     esac
     shift
   done
   [[ "${skip_login}" -ne 0 ]] && do_logout
+  return $return_code
 }
 
 help_arg_passed() {
@@ -844,8 +847,8 @@ do_repipe() {
 
   mkdir -p .ci
   cp ${LH_DIRECTORY}/templates/ci/repipe .ci/repipe
-  cp ${LH_DIRECTORY}/templates/ci/pipeline.yml .ci/pipeline.yml
-  cd .ci
+  cp ${LH_DIRECTORY}/templates/ci/pipeline.yml .ci/pipeline-${BASE_ENV}.yml
+  pushd .ci
   
   cat << EOF > settings-${BASE_ENV}.yml
 ---
@@ -863,7 +866,7 @@ meta:
 
   vault:
     url:   ${VAULT_ADDR}
-    token: "SKIP" # (( vault "secret/pipeline/vault:token" ))
+    token: (( vault "secret/pipeline/vault:token" ))
     path:  (( concat "secret/" meta.envname ))  # Or override as needed
     skip_verify: 1
 

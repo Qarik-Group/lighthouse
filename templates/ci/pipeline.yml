@@ -186,7 +186,7 @@ jobs:
           - { name: configs_git, path: configs }
         run:
           path: ../lighthouse/bin/lh
-          args: [ run , (( grab meta.envname )), tests/cf/spaces.sh ]
+          args: [ run , (( grab meta.envname )), cf/spaces.sh ]
           dir: ./configs
         params:
           (( grab meta.params ))
@@ -294,7 +294,8 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: lighthouse }
+          - { name: lh_git,     path: lighthouse }
+          - { name: configs_git, path: configs }
         run:
           path: ../lighthouse/bin/lh
           args: [ test ,(( grab meta.envname )),  bosh ]
