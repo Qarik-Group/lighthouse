@@ -33,12 +33,39 @@ meta:
     email: ci@starkandwayne.com
     name:  Stark & Wayne CI Bot
 
-  github:
-    uri:          (( concat "git@github.com:" meta.github.owner "/" meta.github.repo ))
+  lighthouse_github:
+    uri:          (( concat "git@github.com:" meta.lighthouse_github.owner "/" meta.lighthouse_github.repo ))
     owner:        (( param "Please specify the name of the user / organization that owns the Github repository" ))
     repo:         (( param "Please specify the name of the Github repository" ))
     branch:       master
     private_key:  (( param "Please generate an SSH Deployment Key for this repo and specify it here" ))
+
+  configs_github:
+    uri:          (( concat "git@github.com:" meta.configs_github.owner "/" meta.configs_github.repo ))
+    owner:        (( param "Please specify the name of the user / organization that owns the Github repository" ))
+    repo:         (( param "Please specify the name of the Github repository" ))
+    branch:       master
+    private_key:  (( param "Please generate an SSH Deployment Key for this repo and specify it here" ))
+
+  params:
+    VAULT_ADDR:             (( grab meta.vault.url ))
+    VAULT_ALIAS:            (( grab meta.envname ))
+    VAULT_PATH:             (( grab meta.vault.path ))
+    VAULT_TOKEN:            (( grab meta.vault.token ))
+    VAULT_SKIP_VERIFY:      (( grab meta.vault.skip_verify ))
+    BASE_ENV:               (( grab meta.envname ))
+    BASE_TYPE:              (( grab meta.basetype ))
+    BOSH_CA_CERT:           (( grab meta.bosh.ca ))
+    BOSH_CLIENT:            (( grab meta.bosh.client ))
+    BOSH_CLIENT_SECRET:     (( grab meta.bosh.client_secret ))
+    BOSH_ALIAS:             (( grab meta.envname ))
+    BOSH_IP:                (( grab meta.bosh.ip ))
+    CF_SKIP_SSL_VALIDATION: (( grab meta.cf.skip_ssl ))
+    CF_USERNAME:            (( grab meta.cf.username ))
+    CF_PASSWORD:            (( grab meta.cf.password ))
+    CF_API:                 (( grab meta.cf.api ))
+    CF_ORG:                 (( grab meta.cf.org ))
+    CF_SPACE:               (( grab meta.cf.space ))
 
 #groups:
 #  - name: (( grab meta.pipeline ))
@@ -57,7 +84,8 @@ jobs:
     do:
     - name: get
       aggregate:
-      - { get: git, trigger: true }
+      - { get: lh_git, trigger: true }
+      - { get: configs_git, trigger: true }
     - name: testflights
       aggregate:
       - name: testflight
@@ -70,26 +98,23 @@ jobs:
               repository: (( grab meta.image.name ))
               tag:        (( grab meta.image.tag ))
           inputs:
-            - { name: git, path: lighthouse }
+            - { name: lh_git,     path: lighthouse }
+            - { name: configs_git, path: configs }
           run:
-            path: ./ci/scripts/check_safe
+            path: ./templates/ci/scripts/check_safe
             args: []
             dir: ./lighthouse
           params:
-            VAULT_ADDR: (( grab meta.vault.url ))
-            VAULT_ALIAS: (( grab meta.envname ))
-            VAULT_PATH: (( grab meta.vault.path ))
-            VAULT_TOKEN: (( grab meta.vault.token ))
-            VAULT_SKIP_VERIFY: 1
-            BOSH_ENVIRONMENT: (( grab meta.envname ))
-            BOSH_IP: (( grab meta.bosh.ip ))
-            BASE_ENV: (( grab meta.envname ))
+            (( grab meta.params ))
 - name: cf-login-test
   public: true
   plan:
   - name: cftest
     do:
-    - get: git 
+    - get: configs_git 
+      passed: [ vault-test ]
+      trigger: true
+    - get: lh_git 
       passed: [ vault-test ]
       trigger: true
     - task: cflogin
@@ -101,27 +126,23 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: lighthouse }
+          - { name: lh_git,     path: lighthouse }
+          - { name: configs_git, path: configs }
         run:
-          path: ./bin/lh
+          path: ../lighthouse/bin/lh
           args:  [ login, (( grab meta.envname )), cf ]
-          dir: ./lighthouse
+          dir: ./configs
         params:
-          VAULT_ADDR: (( grab meta.vault.url ))
-          VAULT_ALIAS: (( grab meta.envname ))
-          VAULT_PATH: (( grab meta.vault.path ))
-          VAULT_TOKEN: (( grab meta.vault.token ))
-          VAULT_SKIP_VERIFY: 1
-          BOSH_ENVIRONMENT: (( grab meta.envname ))
-          BOSH_IP: (( grab meta.bosh.ip ))
-          BASE_ENV: (( grab meta.envname ))
-          CF_PASSWORD: (( grab meta.cf.password ))
+          (( grab meta.params ))
 - name: cf-orgs-test
   public: true
   plan:
   - name: main
     do:
-    - get: git
+    - get: configs_git
+      passed: [ cf-login-test ]
+      trigger: true
+    - get: lh_git
       passed: [ cf-login-test ]
       trigger: true
     - task: cflogin
@@ -133,27 +154,23 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: lighthouse }
+          - { name: lh_git,     path: lighthouse }
+          - { name: configs_git, path: configs }
         run:
-          path: ./bin/lh
+          path: ../lighthouse/bin/lh
           args: [ run , (( grab meta.envname )), cf/orgs.sh ]
-          dir: ./lighthouse
+          dir: ./configs
         params:
-          VAULT_ADDR: (( grab meta.vault.url ))
-          VAULT_ALIAS: (( grab meta.envname ))
-          VAULT_PATH: (( grab meta.vault.path ))
-          VAULT_TOKEN: (( grab meta.vault.token ))
-          VAULT_SKIP_VERIFY: 1
-          BOSH_ENVIRONMENT: (( grab meta.envname ))
-          BOSH_IP: (( grab meta.bosh.ip ))
-          BASE_ENV: (( grab meta.envname ))
-          CF_PASSWORD: (( grab meta.cf.password ))
+          (( grab meta.params ))
 - name: cf-spaces-test
   public: true
   plan:
   - name: main
     do:
-    - get: git
+    - get: configs_git
+      passed: [ cf-login-test ]
+      trigger: true
+    - get: lh_git
       passed: [ cf-login-test ]
       trigger: true
     - task: cflogin
@@ -165,26 +182,23 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: lighthouse }
+          - { name: lh_git,     path: lighthouse }
+          - { name: configs_git, path: configs }
         run:
-          path: ./bin/lh
-          args: [ run , tests/cf/spaces.sh ]
-          dir: ./lighthouse
+          path: ../lighthouse/bin/lh
+          args: [ run , (( grab meta.envname )), tests/cf/spaces.sh ]
+          dir: ./configs
         params:
-          VAULT_ADDR: (( grab meta.vault.url ))
-          VAULT_ALIAS: (( grab meta.envname ))
-          VAULT_PATH: (( grab meta.vault.path ))
-          VAULT_TOKEN: (( grab meta.vault.token ))
-          VAULT_SKIP_VERIFY: 1
-          BOSH_ENVIRONMENT: (( grab meta.envname ))
-          BOSH_IP: (( grab meta.bosh.ip ))
-          BASE_ENV: (( grab meta.envname ))
+          (( grab meta.params ))
 - name: cf-apps-test
   public: true
   plan:
   - name: main
     do:
-    - get: git
+    - get: configs_git
+      passed: [ cf-login-test ]
+      trigger: true
+    - get: lh_git
       passed: [ cf-login-test ]
       trigger: true
     - task: cflogin
@@ -196,26 +210,23 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: lighthouse }
+          - { name: lh_git,     path: lighthouse }
+          - { name: configs_git, path: configs }
         run:
-          path: ./bin/lh
+          path: ../lighthouse/bin/lh
           args: [ run , (( grab meta.envname )) , cf/apps.sh ]
-          dir: ./lighthouse
+          dir: ./configs
         params:
-          VAULT_ADDR: (( grab meta.vault.url ))
-          VAULT_ALIAS: (( grab meta.envname ))
-          VAULT_PATH: (( grab meta.vault.path ))
-          VAULT_TOKEN: (( grab meta.vault.token ))
-          VAULT_SKIP_VERIFY: 1
-          BOSH_ENVIRONMENT: (( grab meta.envname ))
-          BOSH_IP: (( grab meta.bosh.ip ))
-          BASE_ENV: (( grab meta.envname ))
+          (( grab meta.params ))
 - name: cf-buildpacks-test
   public: true
   plan:
   - name: main
     do:
-    - get: git
+    - get: configs_git
+      passed: [ cf-login-test ]
+      trigger: true
+    - get: lh_git
       passed: [ cf-login-test ]
       trigger: true
     - task: cflogin
@@ -227,26 +238,23 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: lighthouse }
+          - { name: lh_git,     path: lighthouse }
+          - { name: configs_git, path: configs }
         run:
-          path: ./bin/lh
+          path: ../lighthouse/bin/lh
           args: [ run , (( grab meta.envname )) , cf/buildpacks.sh ]
-          dir: ./lighthouse
+          dir: ./configs
         params:
-          VAULT_ADDR: (( grab meta.vault.url ))
-          VAULT_ALIAS: (( grab meta.envname ))
-          VAULT_PATH: (( grab meta.vault.path ))
-          VAULT_TOKEN: (( grab meta.vault.token ))
-          VAULT_SKIP_VERIFY: 1
-          BOSH_ENVIRONMENT: (( grab meta.envname ))
-          BOSH_IP: (( grab meta.bosh.ip ))
-          BASE_ENV: (( grab meta.envname ))
-- name: bosh-login-test
+          (( grab meta.params ))
+- name: bosh-login-test          
   public: true
   plan:
   - name: main
     do:
-    - get: git
+    - get: configs_git
+      passed: [ vault-test ]
+      trigger: true
+    - get: lh_git
       passed: [ vault-test ]
       trigger: true
     - task: bosh-login-test
@@ -258,26 +266,23 @@ jobs:
             repository: (( grab meta.image.name ))
             tag:        (( grab meta.image.tag ))
         inputs:
-          - { name: git, path: lighthouse }
+          - { name: lh_git,     path: lighthouse }
+          - { name: configs_git, path: configs }
         run:
-          path: ./bin/lh
-          args: [ login, bosh ]
-          dir: ./lighthouse
+          path: ../lighthouse/bin/lh
+          args: [ login, (( grab meta.envname )), bosh ]
+          dir: ./configs
         params:
-          VAULT_ADDR: (( grab meta.vault.url ))
-          VAULT_ALIAS: (( grab meta.envname ))
-          VAULT_PATH: (( grab meta.vault.path ))
-          VAULT_TOKEN: (( grab meta.vault.token ))
-          VAULT_SKIP_VERIFY: 1
-          BOSH_ENVIRONMENT: (( grab meta.envname ))
-          BOSH_IP: (( grab meta.bosh.ip ))
-          BASE_ENV: (( grab meta.envname ))
+          (( grab meta.params ))
 - name: bosh-tests
   public: true
   plan:
   - name: main
     do:
-    - get: git
+    - get: configs_git
+      passed: [ bosh-login-test ]
+      trigger: true
+    - get: lh_git
       passed: [ bosh-login-test ]
       trigger: true
     - task: bosh-tests
@@ -291,25 +296,24 @@ jobs:
         inputs:
           - { name: git, path: lighthouse }
         run:
-          path: ./bin/lh
+          path: ../lighthouse/bin/lh
           args: [ test ,(( grab meta.envname )),  bosh ]
-          dir: ./lighthouse
+          dir: ./configs
         params:
-          VAULT_ADDR: (( grab meta.vault.url ))
-          VAULT_ALIAS: (( grab meta.envname ))
-          VAULT_PATH: (( grab meta.vault.path ))
-          VAULT_TOKEN: (( grab meta.vault.token ))
-          VAULT_SKIP_VERIFY: 1
-          BOSH_ENVIRONMENT: (( grab meta.envname ))
-          BOSH_IP: (( grab meta.bosh.ip ))
-          BASE_ENV: (( grab meta.envname ))
-
+          (( grab meta.params ))
 
 resources:
-  - name: git
+  - name: lh_git
     type: git
     source:
-      uri:         (( grab meta.github.uri ))
-      branch:      (( grab meta.github.branch ))
-      private_key: (( grab meta.github.private_key ))
+      uri:         (( grab meta.lighthouse_github.uri ))
+      branch:      (( grab meta.lighthouse_github.branch ))
+      private_key: (( grab meta.lighthouse_github.private_key ))
+
+  - name: configs_git
+    type: git
+    source:
+      uri:         (( grab meta.configs_github.uri ))
+      branch:      (( grab meta.configs_github.branch ))
+      private_key: (( grab meta.configs_github.private_key ))
 
