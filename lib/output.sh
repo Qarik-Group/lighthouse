@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# This file contains the output commands used in lighthouse tests.
+# See documentation at the bottom of the file
+
 # Define colors for output.
          BLACK="\e[0;30m"
            RED="\e[0;31m"
@@ -124,3 +127,9 @@ then
     exit 1
   }
 fi
+
+return 0
+
+# These commands are meant to work in terminal windows and in pipelines..
+# The convention for test output lines is
+#   <7-character-color-coded-word> <message>
