@@ -8,8 +8,9 @@ if [[ "" == "${LH_DIRECTORY}" ]] ; then
 fi
 
 . ${LH_DIRECTORY}/lib/output.sh
+. ${LH_DIRECTORY}/lib/curl.sh
 
-dataset="/tmp/lh/feature_flags.$$"
+dataset="feature_flags.$$"
 base_validation_data="data/cf/feature_flags.json"
 lh_result="true"
 
@@ -40,12 +41,12 @@ fab_validate_data()
 
 feature_flag_exists() {
     declare feature_flag="${1:?Missing feature flag argument   $(caller 0)}"
-    jq "[.[] | select(.name==\"${feature_flag}\") ]| length" "${dataset}"
+    jq "[.[] | select(.name==\"${feature_flag}\") ]| length" "/tmp/lh/${dataset}"
 }
 
 feature_flag_enabled() {
     declare feature_flag="${1:?Missing feature flag argument   $(caller 0)}"
-    jq ".[] | select(.name==\"${feature_flag}\") | .enabled" "${dataset}"
+    jq ".[] | select(.name==\"${feature_flag}\") | .enabled" "/tmp/lh/${dataset}"
 }
 
 get_test_enabled_list()
@@ -62,7 +63,14 @@ get_test_disabled_list()
 fab_test()
 {
     declare feature_flag
-    cf curl /v2/config/feature_flags > "${dataset}"
+    query_cf_raw_api /v2/config/feature_flags "${dataset}"
+    (( $? > 0)) && {
+      active "Feature Flag Tests"
+      not_ok $(query_get_error "/tmp/lh/${dataset}")
+      lh_result="false"
+      return 0
+      continue
+    }
 
     declare -a "test_flags=($(get_test_enabled_list))"
     for feature_flag in "${test_flags[@]}"
@@ -108,5 +116,5 @@ else
     lh_result="false"
 fi
             
-rm -f ${dataset}
+rm -f "/tmp/lh${dataset}"
 [[ "${lh_result}" == "true" ]]
