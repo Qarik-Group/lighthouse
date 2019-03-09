@@ -51,6 +51,8 @@ get_org_space_url()
 {
     declare org="${1:?Missing org argument$(caller 0)}"
     query_cf_api "/v2/organizations?q=name:${org}" "${org_dataset}"
+    declare rc=$?
+    ((rc > 0)) && return $rc
     jq --arg org "${org}" -r '.[].entity|select(.name==$org)|.spaces_url' "/tmp/lh/${org_dataset}"
 }
 
@@ -66,6 +68,8 @@ get_space_apps_url()
     declare space_url="${1:?Missing org argument$(caller 0)}"
     declare space="${2:?Missing space argument$(caller 0)}"
     query_cf_api "${spaces_url}" "${spaces_dataset}"
+    declare rc=$?
+    ((rc > 0)) && return $rc
     jq --arg space "${space}" -r '.[].entity|select(.name==$space)|.apps_url' "/tmp/lh/${spaces_dataset}"
 }
 
@@ -110,22 +114,41 @@ fab_test()
         declare -a "org=($(get_test_org ${i}))"
         declare -a "space=($(get_test_space ${i}))"
         declare -a "apps=($(get_test_apps_list ${i}))"
+
         spaces_url=$(get_org_space_url "${org}")
+        (( $? > 0)) && {
+          active "Application data:  collecting org data '${org}'"
+          not_ok $(query_get_error "/tmp/lh/${org_dataset}")
+          lh_result="false"
+          continue
+        }
         [[ -z "${spaces_url}" ]] && {
-            active "Application data  validation for org '${org}'"
-            not_ok "Org does not exist"
-            lh_result="false"
-            continue
+          active "Application data:  validation for org '${org}'"
+          not_ok "Org does not exist"
+          lh_result="false"
+          continue
         }
         apps_url=$(get_space_apps_url "${spaces_url}" "${space}")
+        (( $? > 0)) && {
+          active "Application data:  collecting space data '${org}'"
+          not_ok $(query_get_error "/tmp/lh/${org_dataset}")
+          lh_result="false"
+          continue
+        }
         [[ -z "${apps_url}" ]] && {
-            active "Application data validation for space '${space}'"
-            not_ok "Space does not exist"
-            lh_result="false"
-            continue
+          active "Application data validation for space '${space}'"
+          not_ok "Space does not exist"
+          lh_result="false"
+          continue
         }
 
         query_cf_api "${apps_url}" "${apps_dataset}"
+        (( $? > 0)) && {
+          active "Application data:  collecting application data '${org}'"
+          not_ok $(query_get_error "/tmp/lh/${org_dataset}")
+          lh_result="false"
+          continue
+        }
 
         for app in "${apps[@]}"
         do
