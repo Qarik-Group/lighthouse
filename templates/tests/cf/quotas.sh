@@ -220,7 +220,7 @@ lh_test()
                 if ((${negate}(${quota_value} ${operation[0]} ${operation[1]}) ))
                 then
                     ok 
-                    info "${negate}(${quota_value} ${operation[0]} ${operation[1]})"
+                    debug "quotas" "${negate}(${quota_value} ${operation[0]} ${operation[1]})"
                 else
                     not_ok "${negate}(${quota_value} ${operation[0]} ${operation[1]})"
                     lh_result="false"
