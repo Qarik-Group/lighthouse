@@ -49,7 +49,7 @@ fab_validate_description()
 get_org_space_url()
 {
     declare org="${1:?Missing org argument   $(caller 0)}"
-    query_cf_api "/v2/organizations?q=name:${org}" ${org_dataset}
+    query_cf_api "/v2/organizations?q=name:${org}" ${org_dataset} || return 1
     jq --arg org "${org}" -r '.[].entity|select(.name==$org)|.spaces_url' "/tmp/lh/${org_dataset}"
 }
 
@@ -87,6 +87,12 @@ fab_test()
     do
         declare -a "org=($(get_test_org ${i}))"
         spaces_url=$(get_org_space_url "${org}")
+        (( $? > 0)) && {
+          active "Application data:  collecting org data '${org}'"
+          not_ok $(query_get_error "/tmp/lh/${org_dataset}")
+          lh_result="false"
+          continue
+        }
         [[ -z "${spaces_url}" ]] && {
             active "Does the expected spaces exist in org ${org}?"
             not_ok "Org does not exit"
@@ -95,6 +101,12 @@ fab_test()
         }
 
         query_cf_api "${spaces_url}" "${spaces_dataset}"
+        (( $? > 0)) && {
+          active "Application data:  collecting space data '${org}'"
+          not_ok $(query_get_error "/tmp/lh/${org_dataset}")
+          lh_result="false"
+          continue
+        }
 
         declare -a "spaces=($(get_test_spaces_list "${i}"))"
         for space in "${spaces[@]}"

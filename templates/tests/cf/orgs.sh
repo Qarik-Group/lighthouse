@@ -47,6 +47,12 @@ org_exists() {
 
 fab_test() {
     query_cf_api "/v2/organizations" ${dataset}
+    (( $? > 0)) && {
+      active "Organization Existence Tests"
+      not_ok $(query_get_error "/tmp/lh/${dataset}")
+      lh_result="false"
+      return 0
+    }
 
     # TODO add validation
     for org in $(jq -r '.[]' ${validation_data})
