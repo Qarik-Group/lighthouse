@@ -60,7 +60,7 @@ query_cf_api()
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
             if is_lh_debug_enabled "curl"; then
-              debug "cf curl return a non-zero return status"
+              debug query "cf curl return a non-zero return status"
             fi
             return 2  # cf detected an error
         elif [[ $(query_has_error "${dataset}") == "true" ]]
@@ -68,7 +68,7 @@ query_cf_api()
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
             if is_lh_debug_enabled "curl"; then
-              debug "cf curl was successfull but returned an error"
+              debug query "cf curl was successfull but returned an error"
             fi
             return 1  # cf detected an error
         elif [[ $(has_multi_result_packet "${dataset}") != "true" ]]
@@ -76,7 +76,7 @@ query_cf_api()
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
             if is_lh_debug_enabled "curl"; then
-              debug "cf curl was successfull but output data format was unexpected"
+              debug query "cf curl was successfull but output data format was unexpected"
             fi
             return 2 # unexpected output for this fuction
         fi
