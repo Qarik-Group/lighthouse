@@ -84,7 +84,7 @@ active() {
   return 0
 }
 
-if ! type is_lh_debug_enabled &> /dev/null
+if  [[ $(type -t ${func}) != "function" ]]
 then
 
   is_lh_debug_enabled() {
