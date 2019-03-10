@@ -1,6 +1,8 @@
-./${USE_ENV}/tests/cf/apps.sh
-./${USE_ENV}/tests/cf/buildpacks.sh
-./${USE_ENV}/tests/cf/feature_flags.sh
-./${USE_ENV}/tests/cf/orgs.sh
-./${USE_ENV}/tests/cf/spaces.sh
+cf/apps.sh
+cf/buildpacks.sh
+cf/envvars.sh
+cf/feature_flags.sh
+cf/orgs.sh
 cf/quotas.sh
+cf/services.sh
+cf/spaces.sh
