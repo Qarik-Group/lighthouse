@@ -16,9 +16,9 @@ query_get_error()
     then
         read line <&3
         [[ "${line}" == *: ]] && read line <&3
-        echo "${line}"
+        echo "cf query failure: ${line}"
     else
-        echo "${line}"
+        echo "cf query failure: ${line}"
     fi
     exec 3<&-
 }
@@ -54,7 +54,7 @@ query_cf_api()
     mkdir -p /tmp/lh/apps.$$
     dataset="/tmp/lh/apps.$$/dataset.${i}"
     while [[ "${next_url}" != "null" ]]; do
-        cf curl "${next_url}" > "${dataset}"
+        cf curl "${next_url}" &> "${dataset}"
         if (( $? > 0 ))
         then
             cp ${dataset} "/tmp/lh/${result_file}"
