@@ -109,7 +109,7 @@ initialize_BASE_ENV() {
   declare cmd=${1?initialize_BASE_ENV() - Missing command keyword   $(caller 0)}
   declare action_usage=${2?initialize_BASE_ENV() - no command usage function   $(caller 0)}
   declare base_env=${3?initialize_BASE_ENV() - no command usage function   $(caller 0)}
-  [[ -z "${base_env}" ]] && {
+  [[ -z "${base_env}" || "${base_env}" == -* ]] && {
     error "Missing environment parameter"
     ${action_usage}
   }
