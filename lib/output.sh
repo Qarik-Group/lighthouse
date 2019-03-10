@@ -51,7 +51,7 @@ result() {
 
 warn() {
   declare message="$@"
-  declare status="ERROR"
+  declare status="WARN"
   printf "${YELLOW}%-7s${RESET} %-.70s\n" " ${status}" "${message}"
 }
 
@@ -72,7 +72,7 @@ not_ok() {
   [[ -n "${message}" ]] && {
     printf "${YELLOW}REASON ${RESET} %-.70s\n" "${message}"
   }
-return 0
+  return 0
 }
 
 # TODO: What is an "active" test?
@@ -103,10 +103,6 @@ then
     }
   }
 
-  error() {
-    echo -e "ERROR: $*" >&2
-  }
-
   debug() {
     declare debug_type=${1?debug() - no debug keyword given   $(caller 0)}
     if is_lh_debug_enabled ${debug_type}
@@ -123,11 +119,6 @@ then
       shift
       echo -e "TRACE: $*" >&2
     fi
-  }
-
-  fatal() {
-    echo -e "FATAL: $*" >&2
-    exit 1
   }
 fi
 
