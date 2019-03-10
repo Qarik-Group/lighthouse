@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+[[ ${LH_SOURCED_LIB_CURL:-} == "sourced" ]] && return 0
+export LH_SOURCED_LIB_CURL="sourced"
+
 query_get_error()
 {
     declare dataset="${1:?Missing dataset file   $(caller 0)}"

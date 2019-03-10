@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+[[ ${LH_SOURCED_LIB_OUTPUT:-} == "sourced" ]] && return 0
+export LH_SOURCED_LIB_OUTPUT="sourced"
+
 # This file contains the output commands used in lighthouse tests.
 # See documentation at the bottom of the file
 
@@ -35,7 +38,7 @@ RESTORE_CURSOR="\e[u"
 info() {
   declare message="$@"
   declare status="INFO"
-  printf "\n${PURPLE}%-7s${RESET} %-.70s\n\n" "${status}" "${message}"
+  printf "${PURPLE}%-7s${RESET} %-.70s\n" "${status}" "${message}"
   return 0
 }
 
