@@ -71,14 +71,12 @@ get_service_plan_info()
     then
         active "Marketplace Services Testing "
         not_ok $(query_get_error "/tmp/lh/${dataset}")
-        lh_result="false"
         return 1
     fi
     if ! query_cf_api "/v2/service_plans" ${plans_dataset}
     then
         active "Marketplace Services Testing "
         not_ok $(query_get_error "/tmp/lh/${plans_dataset}")
-        lh_result="false"
         return 1
     fi
     jq --slurpfile services /tmp/lh/${dataset} --slurpfile plans /tmp/lh/${plans_dataset} -n '[[$services[]|.[]|
@@ -106,6 +104,7 @@ fab_test() {
 
     if ! get_service_plan_info
     then
+        lh_result="false"
         return 1
     fi
 
