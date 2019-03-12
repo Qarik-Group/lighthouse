@@ -14,7 +14,7 @@
 
 ## Environment Variables
 
-##### LH_DIRECTORY
+##### LH\_DIRECTORY
 
 This environment variable points to the lighthouse directory where it can find
 the tests and their data files.   The default value is determined by the path
@@ -23,49 +23,59 @@ used to execute the lighthouse command.
 ## Configuration Files
 
 ## Global Options
-###### [-d debug-name[[,|:]debug-name]...]... 
-This parameter takes debug name(s) that are defined in the code.  
-This parameter takes one value but can be specified multiple times.
-The value can contain multiple values separated by a comma, semicolon or a space.
-If spaces are used, the value should be quoted so the shell interprets the value as a single argument.
+__[-d DEBUG-NAME[[,|:]DEBUG-NAME]...]...__
 
-###### [-t trace-name[[,|:],trace-name]...]...
-This parameter takes trace name(s) that are defined in the code.
-This parameter takes one value but can be specified multiple times.
-The value can contain multiple values separated by a comma, semicolon or a space.
-If spaces are used, the value should be quoted so the shell interprets the value as a single argument.
+The debug parameter enables debugging output.  
+Its parameter value takes one or more debug names that are defined in the code.  
+The debug-name parameter value can contain multiple debug names separated
+by a comma, semicolon or a space.  The value should be quoted if you specify
+multiple debug-name values .
+The debug parameter can be specified multiple times which concantinates
+debug name values together.
 
+__[-t TRACE-NAME[[,|:],TRACE-NAME]...]...__
+
+The trace parameter enables tracing output.  
+Its parameter value takes one or more trace names that are defined in the code.  
+The trace-name parameter value can contain multiple trace names separated
+by a comma, semicolon or a space.  The value should be quoted if you specify
+multiple trace-name values .
+The trace parameter can be specified multiple times which concantinates
+trace name values together.
 
 ## Help
-lh [options] help [cmd...]
+__lh__  
+__lh [options] help [HELP-CHOICE]...__
 
+The help command will either list a quick summary of the available help
+choices or displays detailed help for one or more help choices.
 
 ## New
-th [options] new \<environment\>
+__th [options] new ENVIRONMENT__
 
 Create a config.\<environment\>.env and copy over the data files to the environment subdirectory
 
 ## Check
-lh [options] check [dependencies|safe]..
+__lh [options] check [dependencies|safe]..__
 
 ## Init
-lh [options] init \<working-directory\>
+__lh [options] init WORKING-DIRECTORY__
 
 Create a lighhouse working directory and copy over the 
 default data files used by the tests.  This directory 
 should normally be put under source control.
 
 ## Login
-lh [options] login [safe|bosh|cf|uaa]...
+__lh [options] login ENVIRONMENT [safe|bosh|cf|uaa]...__
 
 ## Logout
-lh [options] logout \<environment\>
+__lh [options] logout ENVIRONMENT__
 
 ## Repipe
-lh [options] repipe \<environment\>
+__lh [options] repipe ENVIRONMENT__
 
 ## Run
-lh [options] run \<environment\> [-s] \<test\>
+__lh [options] run ENVIRONMENT [-s] TEST__
 
 ## Test
-lh [options] test \<environment\> \<group\>
+__lh [options] test ENVIRONMENT GROUP__
