@@ -1,16 +1,16 @@
 
 - [Environment Variables](#environment-variables)
 - [Configuration Files](#configuration-files)
-- [Options](##global-options)
-- [help](##help)
-- [new](##new)
-- [check](##check)
-- [init](##init)
+- [Options](#global-options)
+- [help](#help)
+- [new](#new)
+- [check](#check)
+- [init](#init)
 - [login](#login)
-- [logout](##logout)
-- [repipe](##repipe)
-- [run](##run)
-- [test](##test)
+- [logout](#logout)
+- [repipe](#repipe)
+- [run](#run)
+- [test](#test)
 
 ## Environment Variables
 
