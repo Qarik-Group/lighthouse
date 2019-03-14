@@ -1,16 +1,18 @@
 
-- [Environment Variables](#environment-variables)
-- [Configuration Files](#configuration-files)
-- [Options](#global-options)
-- [help](#help)
-- [new](#new)
-- [check](#check)
-- [init](#init)
-- [login](#login)
-- [logout](#logout)
-- [repipe](#repipe)
-- [run](#run)
-- [test](#test)
+[Environment Variables](#environment-variables)  
+[Configuration Files](#configuration-files)  
+[Options](#global-options)  
+[Debug Parameter](#debug-parameter)  
+[Trace Parameter](#trace-parameter)  
+[help](#help)  
+[new](#new)  
+[check](#check)  
+[init](#init)  
+[login](#login)  
+[logout](#logout)  
+[repipe](#repipe)  
+[run](#run)  
+[test](#test)
 
 ## Environment Variables
 
@@ -23,7 +25,9 @@ used to execute the lighthouse command.
 ## Configuration Files
 
 ## Global Options
-__[-d DEBUG-NAME[[,|:]DEBUG-NAME]...]...__
+
+##### Debug Parameter
+**[-d** *DEBUG-NAME[[,|:]DEBUG-NAME]***...]**  
 
 The debug parameter enables debugging output.  
 Its parameter value takes one or more debug names that are defined in the code.  
@@ -33,7 +37,8 @@ multiple debug-name values .
 The debug parameter can be specified multiple times which concantinates
 debug name values together.
 
-__[-t TRACE-NAME[[,|:],TRACE-NAME]...]...__
+##### Trace Parameter
+**[-t** *TRACE-NAME[[,|:],TRACE-NAME]***...]** 
 
 The trace parameter enables tracing output.  
 Its parameter value takes one or more trace names that are defined in the code.  
@@ -44,38 +49,49 @@ The trace parameter can be specified multiple times which concantinates
 trace name values together.
 
 ## Help
-__lh__  
-__lh [options] help [HELP-CHOICE]...__
+Usage: **lh**  
+       **lh** *[options]* **help** *[HELP-CHOICE]***...**  
 
 The help command will either list a quick summary of the available help
 choices or displays detailed help for one or more help choices.
 
 ## New
-__th [options] new ENVIRONMENT__
+Usage: **lh** *[options]* **new** *ENVIRONMENT*
 
-Create a config.\<environment\>.env and copy over the data files to the environment subdirectory
+Create a config.\<environment\>.env file and copy over the data files to 
+the environment subdirectory.  
 
 ## Check
-__lh [options] check [dependencies|safe]..__
+Usage: **lh** *[options]* **check [dependencies|safe]...**
 
 ## Init
-__lh [options] init WORKING-DIRECTORY__
+Usage: **lh** *[options]* **init** *WORKING-DIRECTORY*
 
 Create a lighhouse working directory and copy over the 
 default data files used by the tests.  This directory 
 should normally be put under source control.
 
 ## Login
-__lh [options] login ENVIRONMENT [safe|bosh|cf|uaa]...__
+Usage: **lh** *[options]* **login** *ENVIRONMENT* **[safe|bosh|cf|uaa]...**
 
 ## Logout
-__lh [options] logout ENVIRONMENT__
+Usage: **lh** *[options]* **logout** *ENVIRONMENT*
 
 ## Repipe
-__lh [options] repipe ENVIRONMENT__
+Usage: **lh** *[options]* **repipe** *ENVIRONMENT*
 
 ## Run
-__lh [options] run ENVIRONMENT [-s] TEST__
+Usage: **lh** *[options]* **run** *ENVIRONMENT* **[-s]** *TEST*
+
+Takes one or more paths to test scripts and runs them if possible.
+The path will be 'group/test.sh' such as 'cf/orgs.sh'
+Will login to each component unless instructed otherwise.
+Options:
+-s: skip login to bosh, cf, and uaa.
 
 ## Test
-__lh [options] test ENVIRONMENT GROUP__
+Usage: **lh** *[options]* **test** *ENVIRONMENT GROUP*
+
+run all tests.
+test bosh: only the bosh tests.
+test cf: only cloud foundry tests.
