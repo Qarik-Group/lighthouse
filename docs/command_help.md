@@ -50,7 +50,7 @@ trace name values together.
 
 ## Help
 Usage: **lh**  
-       **lh** *[options]* **help** *[HELP-CHOICE]***...**  
+       **lh** *[options]* **help** *[HELP-CHOICE]***...**  
 
 The help command will either list a quick summary of the available help
 choices or displays detailed help for one or more help choices.
