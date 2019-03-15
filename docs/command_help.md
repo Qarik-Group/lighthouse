@@ -63,6 +63,9 @@ the environment subdirectory.
 
 ## Check
 Usage: **lh** *[options]* **check [dependencies|safe]...**
+This command validates the commands used by lighthouse are available and have
+the minimum required versions. 
+
 
 ## Init
 Usage: **lh** *[options]* **init** *WORKING-DIRECTORY*
