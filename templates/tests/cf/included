@@ -1,7 +1,7 @@
 cf/apps.sh
-cf/buildpacks.sh
-cf/envvars.sh
-cf/feature_flags.sh
+cf/buildpacks
+cf/envvars
+cf/feature_flags
 cf/orgs.sh
 cf/quotas.sh
 cf/services.sh
