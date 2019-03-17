@@ -482,6 +482,7 @@ component_test() {
   while read testcase
   do
     test_file=$(basename "${testcase}")
+    [[ "${test_file: -3}" != ".sh" ]] && test_file="${test_file}.sh"
     test_path=$(find_test_path "${component}/${test_file}")
     if [[ $? -eq 0 ]]; then
       step "Executing ${test_path}"
