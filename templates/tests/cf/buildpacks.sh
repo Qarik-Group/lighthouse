@@ -11,10 +11,11 @@ if [[ "" == "${LH_DIRECTORY}" ]] ; then
 fi
 
 . ${LH_DIRECTORY}/lib/output.sh
+. ${LH_DIRECTORY}/lib/curl.sh
 
 mkdir -p /tmp/lh
 
-dataset="/tmp/lh/buildpacks.$$"
+dataset="buildpacks.$$"
 lh_result="true"
 
 fab_validate_data()
@@ -24,13 +25,19 @@ fab_validate_data()
 
 fab_has_buildpacks()
 {
-    jq '.total_results > 0' ${dataset} 
+    jq '.total_results > 0' "/tmp/lh/${dataset}"
 }
 
 fab_test()
 {
     active "List Buildpacks"
-    cf curl /v2/buildpacks > "${dataset}"
+    query_cf_raw_api /v2/buildpacks "${dataset}"
+    (( $? > 0)) && {
+      not_ok $(query_get_error "/tmp/lh/${dataset}")
+      lh_result="false"
+      return 0
+      continue
+    }
     if [[ $(fab_has_buildpacks) == "true" ]]
     then
         ok
@@ -40,7 +47,7 @@ fab_test()
         return 0
     fi
     declare prev_stack="asdfgh"
-    jq -r '[.resources[].entity]|sort_by(.stack,.position)[]|[.stack//" ",.position,.name]|@tsv' ${dataset} | 
+    jq -r '[.resources[].entity]|sort_by(.stack,.position)[]|[.stack//" ",.position,.name]|@tsv' "/tmp/lh/${dataset}" | 
     while IFS=$'\t' read stack position name 
     do
         if [[ "${prev_stack}" !=  ${stack} ]]
@@ -64,5 +71,5 @@ else
     lh_result="false"
 fi
             
-rm -f ${dataset}
+rm -f "/tmp/lh/${dataset}"
 [[ "${lh_result}" == "true" ]]

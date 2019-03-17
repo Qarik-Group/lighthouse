@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+[[ ${LH_SOURCED_LIB_CURL:-} == "sourced" ]] && return 0
+export LH_SOURCED_LIB_CURL="sourced"
+
 query_get_error()
 {
     declare dataset="${1:?Missing dataset file   $(caller 0)}"
@@ -11,10 +14,11 @@ query_get_error()
         jq -c -r '"cf query failure: " + .description' "${dataset}"
     elif [[ "${line}" == "FAILED" ]]
     then
-        read line <&3;
-        echo "${line}"
+        read line <&3
+        [[ "${line}" == *: ]] && read line <&3
+        echo "cf query failure: ${line}"
     else
-        echo "${line}"
+        echo "cf query failure: ${line}"
     fi
     exec 3<&-
 }
@@ -29,7 +33,7 @@ query_get_error_codes()
 query_has_error()
 {
     declare dataset="${1:?Missing dataset path   $(caller 0)}"
-    jq '[type=="object",length==3,
+    jq '[type=="object" and length==3 and
         has("error_code","code","description")]|all' "${dataset}"
 }
 
@@ -50,21 +54,30 @@ query_cf_api()
     mkdir -p /tmp/lh/apps.$$
     dataset="/tmp/lh/apps.$$/dataset.${i}"
     while [[ "${next_url}" != "null" ]]; do
-        cf curl "${next_url}" > "${dataset}"
+        cf curl "${next_url}" &> "${dataset}"
         if (( $? > 0 ))
         then
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
+            if is_lh_debug_enabled "curl"; then
+              debug query "cf curl return a non-zero return status"
+            fi
             return 2  # cf detected an error
         elif [[ $(query_has_error "${dataset}") == "true" ]]
         then
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
+            if is_lh_debug_enabled "curl"; then
+              debug query "cf curl was successfull but returned an error"
+            fi
             return 1  # cf detected an error
         elif [[ $(has_multi_result_packet "${dataset}") != "true" ]]
         then
             cp ${dataset} "/tmp/lh/${result_file}"
             rm -rf /tmp/lh/apps.$$
+            if is_lh_debug_enabled "curl"; then
+              debug query "cf curl was successfull but output data format was unexpected"
+            fi
             return 2 # unexpected output for this fuction
         fi
         datasets[i]="${dataset}"
@@ -86,6 +99,7 @@ query_cf_raw_api()
     declare result_file="${2:?Missing result filename   $(caller 0)}"
     declare dataset="/tmp/lh/${result_file}"
     cf curl "${url}" > "${dataset}"
+    (($? > 0)) && return 2
     [[ $(query_has_error "${dataset}") == "false" ]]
 }
 

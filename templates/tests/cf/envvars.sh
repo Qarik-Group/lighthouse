@@ -56,6 +56,12 @@ get_test_envvars() {
 test_environment() {
     declare envtype="${1:?Missing environment type  argument   $(caller 0)}"
     query_cf_raw_api  "/v2/config/environment_variable_groups/${envtype}" ${dataset}
+    (($? > 0)) && {
+      active "Test environment ${envtype} variables"
+      not_ok $(query_get_error "/tmp/lh/${dataset}")
+      lh_result="false"
+      return 0
+    }
     
     get_test_envvars ${envtype} | while IFS=$'\t' read name test_value 
     do

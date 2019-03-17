@@ -67,8 +67,18 @@ get_test_service_list()
 
 get_service_plan_info()
 {
-    query_cf_api "/v2/services" ${dataset}
-    query_cf_api "/v2/service_plans" ${plans_dataset}
+    if ! query_cf_api "/v2/services" ${dataset}
+    then
+        active "Marketplace Services Testing "
+        not_ok $(query_get_error "/tmp/lh/${dataset}")
+        return 1
+    fi
+    if ! query_cf_api "/v2/service_plans" ${plans_dataset}
+    then
+        active "Marketplace Services Testing "
+        not_ok $(query_get_error "/tmp/lh/${plans_dataset}")
+        return 1
+    fi
     jq --slurpfile services /tmp/lh/${dataset} --slurpfile plans /tmp/lh/${plans_dataset} -n '[[$services[]|.[]|
                 {sguid:.metadata.guid,name:.entity.label}] as $lookup|
               $plans[]|[.[].entity as $q|
@@ -92,7 +102,11 @@ fab_test() {
     declare -i i tests
     declare service guid service_name
 
-    get_service_plan_info
+    if ! get_service_plan_info
+    then
+        lh_result="false"
+        return 1
+    fi
 
     tests=$(get_test_array_length)
     for ((i=0; i < tests;i++))
@@ -136,7 +150,7 @@ if [[ $(fab_validate_data) == "true" ]]
 then
     fab_test
 else
-    active "Perform organization existence tests"
+    active "Perform marketplace services tests"
     not_ok  $(fab_validate_description)
     lh_result="false"
 fi

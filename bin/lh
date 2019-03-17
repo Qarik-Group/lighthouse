@@ -5,13 +5,13 @@ shopt -s extglob
 
 # NOTE Cannot move into output.h since is it used before LH_DIRECTORY is defined 
 
-fatal() {
-  echo -e "FATAL: $*" >&2
+cli_fatal() {
+  echo -e "FATAL: $*"
   exit 1
 }
 
 (( ${BASH_VERSINFO[0]} > 3 )) || {
-  fatal "Bash version must be  4.X or greater"
+  cli_fatal "Bash version must be  4.X or greater"
 }
 
 step() {
@@ -58,8 +58,16 @@ trace() {
   fi
 }
 
-error() {
-  echo -e "ERROR: $*" >&2
+cli_warn() {
+  echo -e "WARN: $*"
+}
+
+cli_error() {
+  echo -e "ERROR: $*"
+}
+
+cli_info() {
+  echo -e "\nINFO: $*\n"
 }
 
 declare inode_list
@@ -95,7 +103,7 @@ initialize_environment() {
 
   if [[ ! -r "${LH_DIRECTORY}/lib/output.sh" ]]
   then
-    fatal "LH_DIRECTORY does not point to the lighthouse directory"
+    cli_fatal "LH_DIRECTORY does not point to the lighthouse directory"
   fi
 
   . ${LH_DIRECTORY}/lib/output.sh
@@ -109,13 +117,13 @@ initialize_BASE_ENV() {
   declare cmd=${1?initialize_BASE_ENV() - Missing command keyword   $(caller 0)}
   declare action_usage=${2?initialize_BASE_ENV() - no command usage function   $(caller 0)}
   declare base_env=${3?initialize_BASE_ENV() - no command usage function   $(caller 0)}
-  [[ -z "${base_env}" ]] && {
-    error "Missing environment parameter"
+  [[ -z "${base_env}" || "${base_env}" == -* ]] && {
+    cli_error "Missing environment parameter"
     ${action_usage}
   }
 
   [[ ",bosh,cf,safe,uaa," == *,${base_env},* ]] && {
-    error "Ambiguous or Missing environment parameter"
+    cli_error "Ambiguous or Missing environment parameter"
     ${action_usage}
   }
   
@@ -269,7 +277,7 @@ set_variable() {
   [[ -z "${defaults[${base_variable}]+has_value}" ]] && {
     [[ ${required} == "optional" ]] && return 0
     [[ ${required} == "required" ]] && {
-      error "${display_name} is required to be given or configured"
+      cli_error "${display_name} is required to be given or configured"
     }
     return 1
   }
@@ -307,17 +315,17 @@ setup_environment() {
       source "config.${LH_BASE_ENV}.env"
       debug "set_variable"  "Sourcing config.${LH_BASE_ENV}.env"
       [[ -z "${BASE_ENV}" || -z "${LH_BASE_ENV}" || "${BASE_ENV}" != "${LH_BASE_ENV}" ]] && 
-        fatal "The command line environment parameter does not match the BASE_ENV in config.${LH_BASE_ENV}.env"
+        cli_fatal "The command line environment parameter does not match the BASE_ENV in config.${LH_BASE_ENV}.env"
     else
-      fatal "BASE_ENV set to '${LH_BASE_ENV}' but config.${LH_BASE_ENV}.env not found"
+      cli_warn "BASE_ENV set to '${LH_BASE_ENV}' but config.${LH_BASE_ENV}.env not found"
     fi
   else
-    fatal "Missing the environment parameter from the lighthouse command"
+    cli_fatal "Missing the environment parameter from the lighthouse command"
     # [[ -s "config.env" ]] && source "config.env"
   fi
 
-  : ${BASE_TYPE:?"BASE_TYPE must be set to a value"}
-  : ${BASE_ENV:?"BASE_ENV must be set to a value"}
+  [[ -z "${BASE_TYPE:+has_value}" ]] && cli_fatal "BASE_TYPE must be set to a value"
+  [[ -z "${BASE_ENV:+has_value}" ]]  && cli_fatal "BASE_ENV must be set to a value"
 
   declare which_variable="environment"
   [[ ${action} == 'repipe' ]] && which_variable="path"
@@ -377,8 +385,8 @@ need_command() {
   declare cmd=${1:?need_command() - no command name given   $(caller 0)}
 
   if [[ ! -x "$(command -v $cmd)" ]]; then
-    error "The ${cmd} is not found in your PATH.  Please install and update"
-    error "your PATH before proceeding."
+    cli_error "The ${cmd} is not found in your PATH.  Please install and update"
+    cli_error "your PATH before proceeding."
     return 1
   fi
   return 0
@@ -413,11 +421,11 @@ has_minimum_program_version() {
     declare progver="${BASH_REMATCH[1]}"
     if ! is_version_ok "${minimum}" "${progver}"
     then
-      error "You need to upgrade ${program} from version ${progver} to at least version ${minimum}" 
+      cli_error "You need to upgrade ${program} from version ${progver} to at least version ${minimum}" 
       return 1
     fi
   else
-    error "Unable to extract version for ${program}" 
+    cli_error "Unable to extract version for ${program}" 
     return 1
   fi
   return 0
@@ -432,7 +440,7 @@ find_included_path() {
   elif [[ -f "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
     echo "${LH_DIRECTORY}/templates/tests/${test_path}"
   else
-    error "Test '${test_path}' does not exist; skipping."
+    cli_error "Test '${test_path}' does not exist; skipping."
     return 1
   fi
   return 0
@@ -447,7 +455,7 @@ find_test_path() {
   elif [[ -x "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
     echo "${LH_DIRECTORY}/templates/tests/${test_path}"
   else
-    warn "Test '${test_path}' does not exist or is not an executable; skipping."
+    cli_warn "Test '${test_path}' does not exist or is not an executable; skipping."
     return 1
   fi
   return 0
@@ -494,7 +502,7 @@ do_test() {
         component_test "${1}"
         ;;
       *)
-        error "Unrecognized argument: '${1}'"
+        cli_error "Unrecognized argument: '${1}'"
         test_usage
         ;;
     esac
@@ -622,7 +630,7 @@ check_safe() {
 
   safe get secret/handshake > /dev/null
   if [[ $? > 0 ]]; then
-    error "There was an error checking safe.  Please ensure your VAULT_ADDR and VAULT_TOKEN are correct."
+    cli_error "There was an error checking safe.  Please ensure your VAULT_ADDR and VAULT_TOKEN are correct."
     return 1
   fi
   echo -e "\nOK\n"
@@ -677,17 +685,17 @@ safe_login() {
     then
       echo "Already logged into   Vault. Skipping Vault login"
     else
-      error "Please login to safe or set the VAULT_TOKEN"
+      cli_error "Please login to safe or set the VAULT_TOKEN"
       exit 1
     fi
   else
     step "Logging into safe."
     if [[ $VAULT_ADDR == +("replace-me"|'') ]]; then 
-       error "Please configure VAULT_ADDR in your configure file "
+       cli_error "Please configure VAULT_ADDR in your configure file "
        exit 1
      fi
      if [[ $VAULT_ALIAS == +("replace-me"|'') ]]; then 
-        error  "Please configure VAULT_ALIAS in your configure file"
+        cli_error  "Please configure VAULT_ALIAS in your configure file"
         exit
      fi
      safe -k target ${VAULT_ADDR} ${VAULT_ALIAS}
@@ -762,7 +770,7 @@ check() {
         check_safe || rc=$?
         ;;
       *)
-        error "Unrecognized argument: '${1}'"
+        cli_error "Unrecognized argument: '${1}'"
         check_usage
         ;;
     esac
@@ -779,7 +787,7 @@ do_login() {
         ${1}_login
         ;;
       *)
-        error "Unrecognized argument: '${1}'"
+        cli_error "Unrecognized argument: '${1}'"
         login_usage
         ;;
     esac
@@ -799,7 +807,7 @@ do_logout() {
         ${1}_logout
         ;;
       *)
-        error "Unrecognized argument: '${1}'"
+        cli_error "Unrecognized argument: '${1}'"
         logout_usage
         ;;
     esac
@@ -899,7 +907,7 @@ EOF
 # TODO Do we extend init to create more than one environment at a time
 do_init() {
   (( $# <  1 )) && {
-    error "Missing the working directory parameter" 
+    cli_error "Missing the working directory parameter" 
     init_usage
   }
   new_directory="$1"
@@ -1117,7 +1125,7 @@ do_help_cmd() {
     func="${cmd}_usage"
     if [[ $(type -t ${func}) != "function" ]]
     then
-      error "${cmd}: no such command exists"
+      cli_error "${cmd}: no such command exists"
       rc=1
     fi
   done
@@ -1149,7 +1157,7 @@ perform_action() {
   }
   (( setup > 2 )) && {
     if ! setup_environment ${cmd}; then
-      fatal "Variable setup failed"
+      cli_fatal "Variable setup failed"
     fi
   }
   ${action} "$@"
@@ -1171,7 +1179,7 @@ do
       if (( $# > 1 )); then 
         enable_lh_debug "$1"; shift
       else
-        error "Missing -d argument or no command to run"
+        cli_error "Missing -d argument or no command to run"
         usage
       fi
       ;;
@@ -1180,7 +1188,7 @@ do
       if (( $# > 1 )); then 
         enable_lh_trace "$1"; shift
       else
-        error "Missing -t argument or no command to run"
+        cli_error "Missing -t argument or no command to run"
         usage
       fi
       ;;
@@ -1221,7 +1229,7 @@ do
       perform_action $action 3 do_test test_usage "$@"
       ;;
     *)
-      error "Invalid command '$1'"
+      cli_error "Invalid command '$1'"
       usage
       ;;
   esac

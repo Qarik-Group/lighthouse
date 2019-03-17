@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+[[ ${LH_SOURCED_LIB_OUTPUT:-} == "sourced" ]] && return 0
+export LH_SOURCED_LIB_OUTPUT="sourced"
+
+# This file contains the output commands used in lighthouse tests.
+# See documentation at the bottom of the file
+
 # Define colors for output.
          BLACK="\e[0;30m"
            RED="\e[0;31m"
@@ -32,7 +38,7 @@ RESTORE_CURSOR="\e[u"
 info() {
   declare message="$@"
   declare status="INFO"
-  printf "\n${PURPLE}%-7s${RESET} %-.70s\n\n" "${status}" "${message}"
+  printf "${PURPLE}%-7s${RESET} %-.70s\n" "${status}" "${message}"
   return 0
 }
 
@@ -45,7 +51,7 @@ result() {
 
 warn() {
   declare message="$@"
-  declare status="ERROR"
+  declare status="WARN"
   printf "${YELLOW}%-7s${RESET} %-.70s\n" " ${status}" "${message}"
 }
 
@@ -66,7 +72,7 @@ not_ok() {
   [[ -n "${message}" ]] && {
     printf "${YELLOW}REASON ${RESET} %-.70s\n" "${message}"
   }
-return 0
+  return 0
 }
 
 # TODO: What is an "active" test?
@@ -78,7 +84,7 @@ active() {
   return 0
 }
 
-if ! type is_lh_debug_enabled >/dev/null
+if  [[ $(type -t ${func}) != "function" ]]
 then
 
   is_lh_debug_enabled() {
@@ -95,10 +101,6 @@ then
         [[ ",${LH_TRACE}" == *,${word},* ]] && return 0
       done
     }
-  }
-
-  error() {
-    echo -e "ERROR: $*" >&2
   }
 
   debug() {
@@ -118,9 +120,10 @@ then
       echo -e "TRACE: $*" >&2
     fi
   }
-
-  fatal() {
-    echo -e "FATAL: $*" >&2
-    exit 1
-  }
 fi
+
+return 0
+
+# These commands are meant to work in terminal windows and in pipelines..
+# The convention for test output lines is
+#   <7-character-color-coded-word> <message>
