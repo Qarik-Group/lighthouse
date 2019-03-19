@@ -432,7 +432,7 @@ has_minimum_program_version() {
 }
 
 find_included_path() {
-  test_path="$1"
+  declare test_path="$1"
   if [[ -f "${USE_ENV}/tests/${test_path}" ]]; then
     echo "${USE_ENV}/tests/${test_path}"
   elif [[ -f "tests/${test_path}" ]]; then
@@ -447,7 +447,7 @@ find_included_path() {
 }
 
 find_test_path() {
-  test_path="$1"
+  declare test_path="$1"
   if [[ -x "${USE_ENV}/tests/${test_path}" ]]; then
     echo "${USE_ENV}/tests/${test_path}"
   elif [[ -x "tests/${test_path}" ]]; then
