@@ -84,7 +84,7 @@ active() {
   return 0
 }
 
-if  [[ $(type -t ${func}) != "function" ]]
+if  [[ $(type -t is_lh_debug_enabled) != "function" ]]
 then
 
   is_lh_debug_enabled() {
@@ -105,7 +105,7 @@ then
 
   debug() {
     declare debug_type=${1?debug() - no debug keyword given   $(caller 0)}
-    if is_lh_debug_enabled ${debug_type}
+    if is_lh_debug_enabled "${debug_type}"
     then
       shift
       echo -e "DEBUG: $*" >&2
@@ -114,7 +114,7 @@ then
 
   trace() {
     declare trace_type=${1?debug() - no trace keyword given   $(caller 0)}
-    if is_lh_trace_enabled ${trace_type}
+    if is_lh_trace_enabled "${trace_type}"
     then
       shift
       echo -e "TRACE: $*" >&2
