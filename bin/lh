@@ -70,6 +70,24 @@ cli_info() {
   echo -e "\nINFO: $*\n"
 }
 
+lh_basename() {
+  declare path=${1//+(\/)/\/} 
+  echo ${path##*/}
+}
+
+lh_dirname() {
+  declare path=${1//\/+(\/)/\/} 
+  declare result="${path%/*}"
+  [[ -n ${path} ]] && {
+    if [[ -z "${result}" ]]; then
+      result="/"
+    elif [[ "${path}" == "${result}" ]]; then
+      result="."
+    fi
+  }
+  echo "${result}";
+}
+
 declare inode_list
 
 is_path_in_PATH() {
@@ -98,15 +116,13 @@ initialize_environment() {
 
   if [[ -z ${LH_DIRECTORY:+is_set_and_not_empty}  ]]
   then
-    LH_DIRECTORY=$(dirname $(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd))
+    LH_DIRECTORY=$(lh_dirname $(cd "$(lh_dirname "${BASH_SOURCE[0]}" )" && pwd))
   fi
 
   if [[ ! -r "${LH_DIRECTORY}/lib/output.sh" ]]
   then
     cli_fatal "LH_DIRECTORY does not point to the lighthouse directory"
   fi
-
-  . ${LH_DIRECTORY}/lib/output.sh
 
   add_lib_paths_to_PATH
 }
