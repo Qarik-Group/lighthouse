@@ -560,16 +560,16 @@ bosh_login() {
   mkdir -p /tmp/lh_certs.$$
   local _tmp_file=/tmp/lh_certs.$$/bosh-ssl.crt
 
-  info "Storing the BOSH_CA_CERT in the temp file ${_tmp_file}"
+  cli_info "Storing the BOSH_CA_CERT in the temp file ${_tmp_file}"
 
   echo -e -n "${BOSH_CA_CERT}\n" > ${_tmp_file}
 
   # Create an alias
-  info "Creating an environment alias for ${BOSH_ALIAS} to ${BOSH_IP} with ca-crt ${_tmp_file}"
+  cli_info "Creating an environment alias for ${BOSH_ALIAS} to ${BOSH_IP} with ca-crt ${_tmp_file}"
 
   BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh alias-env ${BOSH_ALIAS} -e ${BOSH_IP}
 
-  info "Logging into the BOSH Alias ${BOSH_ALIAS}"
+  cli_info "Logging into the BOSH Alias ${BOSH_ALIAS}"
 
   BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT=${BOSH_CLIENT} BOSH_CLIENT_SECRET=${BOSH_CLIENT_SECRET}  bosh login -e ${BOSH_ALIAS}
   # printf "%s\n%s\n" ${BOSH_CLIENT} ${BOSH_CLIENT_SECRET} | (BOSH_CA_CERT=${_tmp_file} BOSH_CLIENT= BOSH_CLIENT_SECRET=  bosh login -e ${BOSH_IP})
@@ -579,7 +579,7 @@ bosh_login() {
 bosh_logout() {
   step "Log out of BOSH."
 
-  info "Logging out of BOSH Environment ${BOSH_ALIAS}"
+  cli_info "Logging out of BOSH Environment ${BOSH_ALIAS}"
 
   bosh logout -e ${BOSH_ALIAS}
 
@@ -598,16 +598,16 @@ cf_login() {
 
   declare skip_ssl_flag="--skip-ssl-validation"
 
-  info "Setting cf api to ${CF_API}"
+  cli_info "Setting cf api to ${CF_API}"
 
   [[ "${CF_SKIP_SSL_VALIDATION}" == "1" ]] || skip_ssl_flag=""
   cf api ${skip_ssl_flag} "${CF_API}" 
 
-  info "Authenticating to CF as user ${CF_USERNAME}"
+  cli_info "Authenticating to CF as user ${CF_USERNAME}"
 
   CF_USERNAME="${CF_USERNAME}" CF_PASSWORD="${CF_PASSWORD}" cf auth
 
-  info "Targeting org ${CF_ORG} and space ${CF_ORG}"
+  cli_info "Targeting org ${CF_ORG} and space ${CF_ORG}"
 
   cf target -o "${CF_ORG}" -s "${CF_SPACE}"
 }
