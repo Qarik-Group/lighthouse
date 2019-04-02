@@ -124,6 +124,8 @@ initialize_environment() {
     cli_fatal "LH_DIRECTORY does not point to the lighthouse directory"
   fi
 
+  debug "set_variable" "LH_DIRECTORY=${LH_DIRECTORY}"
+
   add_lib_paths_to_PATH
 }
 
@@ -144,6 +146,7 @@ initialize_BASE_ENV() {
   }
   
   declare -gx LH_BASE_ENV=${base_env}
+  debug "set_variable" "LH_BASE_ENV=${LH_BASE_ENV}"
 }
 
 # Beginning of function definitions
