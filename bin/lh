@@ -450,8 +450,8 @@ has_minimum_program_version() {
   return 0
 }
 
-find_included_path() {
-  declare test_path="$1"
+search_tests_paths() {
+  declare test_path="${1:?t() - Missing test path   $(caller 0)}"
   if [[ -f "${USE_ENV}/tests/${test_path}" ]]; then
     echo "${USE_ENV}/tests/${test_path}"
   elif [[ -f "tests/${test_path}" ]]; then
@@ -459,21 +459,29 @@ find_included_path() {
   elif [[ -f "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
     echo "${LH_DIRECTORY}/templates/tests/${test_path}"
   else
-    cli_error "Test '${test_path}' does not exist; skipping."
+    return 1
+  fi
+  return 0
+}
+
+find_included_path() {
+  declare test_path="${1:?t() - Missing test path   $(caller 0)}"
+  declare group=${test_path}
+  if [[ ${test_path} == */included ]]; then
+    group=${group%"/included"}
+  else
+    test_path="${test_path}/included"
+  fi
+  if ! search_tests_paths ${test_path}; then
+    cli_error "Group '${group}' included file was not found; skipping." >&2
     return 1
   fi
   return 0
 }
 
 find_test_path() {
-  declare test_path="$1"
-  if [[ -x "${USE_ENV}/tests/${test_path}" ]]; then
-    echo "${USE_ENV}/tests/${test_path}"
-  elif [[ -x "tests/${test_path}" ]]; then
-    echo "tests/${test_path}"
-  elif [[ -x "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
-    echo "${LH_DIRECTORY}/templates/tests/${test_path}"
-  else
+  declare test_path="${1:?t() - Missing test path   $(caller 0)}"
+  if ! search_tests_paths ${test_path}; then
     cli_warn "Test '${test_path}' does not exist or is not an executable; skipping."
     return 1
   fi
@@ -484,6 +492,75 @@ has_test_requires_line() {
     grep -m 20 -E '^[[:blank:]]*#[[:blank:]]*lh_test_requires([[:blank:]]+[[:alnum:]_-]+)+[[:blank:]]*$' $@
 }
 
+interpret_included_line() {
+  declare test_path="${1:?t() - Missing test path   $(caller 0)}"
+  declare included_group="${2:?t() - Missing included group name   $(caller 0)}"
+
+  test_path=${test_path//\/+(\/)/\/} 
+
+  echo interpret_included_line ${test_path} group ${included_group} >&2
+
+  [[ -n "${included_group//[^\/]}" ]] && {
+    cli_error "Groups cannot be relative paths"
+    return 1
+  }
+
+  declare slashes="${test_path//[^\/]}"
+  case ${#slashes} in
+    0)
+      [[ -n ${test_path}  && ${test_path} == @(.|..|~) ]] && {
+        cli_error "Cannot specify ., .. or ~ for directory or file references"
+        return 1
+      }
+      [[ "${test_path: -3}" == ".sh" ]] && {
+        echo "${included_group}/${test_path}"
+        return 0
+      }
+      if find_test_path "${included_group}/${test_path}.sh" &> /dev/null; then
+        echo "${included_group}/${test_path}.sh"
+        return 0
+      elif find_included_path "${test_path}" &> /dev/null; then
+        echo "${test_path}/included"
+        return 0
+      else
+        cli_error "Cannot find test or group for ${test_path}"
+        return 1
+      fi
+      ;;
+      
+    1)
+      declare test_dir=$(lh_dirname "${test_path}")
+      declare test_file=$(lh_basename "${test_path}")
+      if [[ -n ${test_dir}  && ${test_dir} != @(.|..|~) ]]
+      then
+        [[ ${test_dir} == "/" ]] && test_dir=${included_group}
+        if [[ -n ${test_file}  && ${test_file} != @(.|..|~) ]]
+        then
+          [[ "${test_path: -3}" != ".sh" ]] && test_file="${test_file}.sh"
+          echo ${test_dir}/${test_file}
+          return 0
+        elif [[ -z ${test_file} ]]
+        then
+          echo "${test_dir}/included" 
+          return 0
+        else
+          cli_error "Cannot specify ., .. or ~ for file references"
+          return 1
+        fi
+      else
+        cli_error "Cannot specify ., .. or ~ for directory references"
+        return 1
+      fi
+      cli_error "Should not reach here I hope"
+      ;;
+    *) cli_error Syntax error in processing included file
+      return 1
+      ;;
+  esac
+}
+
+declare -A processing_included_files
+
 component_test() {
   declare component="${1:?component_test() - Missing group argument   $(caller 0)}"
 
@@ -491,26 +568,52 @@ component_test() {
 
   declare testcase test_file test_path
 
-  declare included_path=$(find_included_path ${component}/included)
+  declare included_path=$(find_included_path ${component})
   if [[ $? -ne 0 ]]; then
     return 1
   fi
 
+  if [[ -v processing_included_files["${included_path}"] ]]; then
+    
+    echo "Cannot run ${component} tests because it would cause an infinite recurion loop"
+    return 2
+  fi
+
   echo Using included path  ${included_path}
+
+  processing_included_files["${included_path}"]=""
 
   while read testcase
   do
-    test_file=$(basename "${testcase}")
-    [[ "${test_file: -3}" != ".sh" ]] && test_file="${test_file}.sh"
-    test_path=$(find_test_path "${component}/${test_file}")
-    if [[ $? -eq 0 ]]; then
-      step "Executing ${test_path}"
-      . ${test_path}
+    test_file=$(interpret_included_line "${testcase}" "${component}")
+    if [[ $? -ne 0 ]]; then
+      step "Executing ${component}/${testcase}"
+      echo ${test_file}
+      continue
+    fi
+    if [[ "${test_file}" == */included ]]; then
+      test_path=$(find_included_path "${test_file}")
+      if [[ $? -eq 0 ]]; then
+        step "Processing Group ${test_path}"
+        declare group="${test_path%"/included"}"
+        group=$(lh_basename ${group})
+        component_test "${group}"
+      else
+        step "Processing Group ${test_path}"
+        echo ${test_path}
+      fi
     else
-      step "Executing ${component}/${test_file}"
-      echo ${test_path}
+      test_path=$(find_test_path "${test_file}")
+      if [[ $? -eq 0 ]]; then
+        step "Executing ${test_path}"
+        . ${test_path}
+      else
+        step "Executing ${component}/${test_path}"
+        echo ${test_path}
+      fi
     fi
   done <"${included_path}"
+  unset processing_included_files["${included_path}"]
   return 0
 }
 
@@ -841,7 +944,7 @@ do_logout() {
 
 run_individual_test() {
   declare test_file test_path
-  test_file="${1:?run_individual_test() - Missing quota/plan argument   $(caller 0)}"
+  test_file="${1:?run_individual_test() - Missing test file argument   $(caller 0)}"
   [[ "${skip_login}" -ne 0 ]] && do_login cf bosh uaa
   test_path=$(find_test_path "${test_file}")
   if [[ $? -eq 0 ]]; then
