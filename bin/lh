@@ -641,9 +641,7 @@ setup_groups() {
 do_test() {
   setup_groups
   (( $# == 0 )) && set -- bosh cf uaa
-  echo ${!groups[@]}
   while [[ $# -gt 0 ]]; do
-    echo group given is $1
     if [[ -v groups["$1"] ]]; then
       component_test "$1"
     else
