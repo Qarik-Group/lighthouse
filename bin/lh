@@ -100,7 +100,7 @@ is_path_in_PATH() {
 
 add_lib_paths_to_PATH() {
     declare path path_inode
-    for path in "${LH_DIRECTORY}/lib/" "$PWD/lib/" "${USE_ENV}/lib/"
+    for path in "${LH_DIRECTORY}/lib/" "$PWD/lib/" "${LH_BASE_ENV}/lib/"
     do
         path_inode=$(is_path_in_PATH "${path}")
         case $? in
@@ -452,14 +452,25 @@ has_minimum_program_version() {
 
 search_tests_paths() {
   declare test_path="${1:?t() - Missing test path   $(caller 0)}"
-  if [[ -f "${USE_ENV}/tests/${test_path}" ]]; then
-    echo "${USE_ENV}/tests/${test_path}"
+  if [[ -f "${LH_BASE_ENV}/tests/${test_path}" ]]; then
+    echo "${LH_BASE_ENV}/tests/${test_path}"
   elif [[ -f "tests/${test_path}" ]]; then
     echo "tests/${test_path}"
   elif [[ -f "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
     echo "${LH_DIRECTORY}/templates/tests/${test_path}"
   else
     return 1
+  fi
+  return 0
+}
+
+get_groups() {
+  ls */tests/*/included 2>/dev/null | grep -v "^templates"
+  if [[ -d "tests" ]]; then
+    ls tests/*/included 2>/dev/null
+  fi
+  if [[ -d "${LH_DIRECTORY}/templates/tests" ]]; then
+    ls "${LH_DIRECTORY}"/templates/tests/*/included 2>/dev/null
   fi
   return 0
 }
@@ -617,18 +628,28 @@ component_test() {
   return 0
 }
 
+declare -A groups
+
+setup_groups() {
+  for included_file in $(get_groups)
+  do
+    group=$(lh_basename $(lh_dirname "${included_file}"))
+    [[ ! -v groups[${group}] ]] && groups[${group}]=
+  done
+}
+
 do_test() {
+  setup_groups
   (( $# == 0 )) && set -- bosh cf uaa
+  echo ${!groups[@]}
   while [[ $# -gt 0 ]]; do
-    case "$1" in
-      cf|bosh|uaa)
-        component_test "${1}"
-        ;;
-      *)
-        cli_error "Unrecognized argument: '${1}'"
-        test_usage
-        ;;
-    esac
+    echo group given is $1
+    if [[ -v groups["$1"] ]]; then
+      component_test "$1"
+    else
+      cli_error "Unrecognized group: '${1}'"
+      test_usage
+    fi
     shift
   done
 }
@@ -712,7 +733,7 @@ bosh_logout() {
 bosh_tests() {
   step "Running BOSH tests."
 
-  . ${USE_ENV}/tests/bosh/included
+  . ${LH_BASE_ENV}/tests/bosh/included
 }
 
 cf_login() {
@@ -745,7 +766,7 @@ cf_logout() {
 cf_tests() {
   step "Running CF tests."
 
-  . ${USE_ENV}/tests/cf/included
+  . ${LH_BASE_ENV}/tests/cf/included
 }
 
 check_safe() {
@@ -1213,13 +1234,20 @@ run_usage() {
   ${return_by} ${rc}
 }
 
+list_groups() {
+  for group in $(get_groups)
+  do
+    lh_basename $(lh_dirname "${group}")
+  done | sort -u
+}
+
 test_usage() {
   declare rc=${1:-1}
   declare return_by=${2:-"exit"}
-  echo "Usage: $(basename $0) test  environment"
-  echo "  run all tests."
-  echo "  test bosh: only the bosh tests."
-  echo "    test cf: only cloud foundry tests."
+  echo "Usage: $(basename $0) test environment [groups]"
+  echo "Run all bosh, cf and uaa tests if no groups specified\n"
+  echo "Available groups are: "
+  list_groups
   ${return_by} ${rc}
 }
 
@@ -1270,10 +1298,10 @@ perform_action() {
   local action=$3
   local action_usage=$4
   shift 4
+  (( setup > 0 )) && initialize_environment
   if [[ "${cmd}" != "help" ]] && help_arg_passed "$@"; then
     ${action_usage} 0
   fi
-  (( setup > 0 )) && initialize_environment
   (( setup > 1 )) && {
     initialize_BASE_ENV "${cmd}" "${action_usage}" "$1"
     shift
@@ -1317,15 +1345,15 @@ do
       ;;
     help|-h|--help)
       shift
-      perform_action $action 0 do_help_cmd help_usage "$@"
+      perform_action $action 1 do_help_cmd help_usage "$@"
       ;;
     new)
       shift
-      perform_action $action 0 new_env new_usage "$@"
+      perform_action $action 1 new_env new_usage "$@"
       ;;
     check)
       shift
-      perform_action $action 0 check check_usage "$@"
+      perform_action $action 1 check check_usage "$@"
       ;;
     init)
       shift
