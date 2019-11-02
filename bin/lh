@@ -82,7 +82,7 @@ is_path_in_PATH() {
 
 add_lib_paths_to_PATH() {
     declare path path_inode
-    for path in "${LH_DIRECTORY}/lib/" "$PWD/lib/" "${USE_ENV}/lib/"
+    for path in "${LH_DIRECTORY}/lib/" "$PWD/lib/" "${BASH_ENV}/lib/"
     do
         path_inode=$(is_path_in_PATH "${path}")
         case $? in
@@ -433,8 +433,8 @@ has_minimum_program_version() {
 
 find_included_path() {
   declare test_path="$1"
-  if [[ -f "${USE_ENV}/tests/${test_path}" ]]; then
-    echo "${USE_ENV}/tests/${test_path}"
+  if [[ -f "${BASH_ENV}/tests/${test_path}" ]]; then
+    echo "${BASH_ENV}/tests/${test_path}"
   elif [[ -f "tests/${test_path}" ]]; then
     echo "tests/${test_path}"
   elif [[ -f "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
@@ -448,8 +448,8 @@ find_included_path() {
 
 find_test_path() {
   declare test_path="$1"
-  if [[ -x "${USE_ENV}/tests/${test_path}" ]]; then
-    echo "${USE_ENV}/tests/${test_path}"
+  if [[ -x "${BASH_ENV}/tests/${test_path}" ]]; then
+    echo "${BASH_ENV}/tests/${test_path}"
   elif [[ -x "tests/${test_path}" ]]; then
     echo "tests/${test_path}"
   elif [[ -x "${LH_DIRECTORY}/templates/tests/${test_path}" ]]; then
@@ -590,7 +590,7 @@ bosh_logout() {
 bosh_tests() {
   step "Running BOSH tests."
 
-  . ${USE_ENV}/tests/bosh/included
+  . ${BASH_ENV}/tests/bosh/included
 }
 
 cf_login() {
@@ -623,7 +623,7 @@ cf_logout() {
 cf_tests() {
   step "Running CF tests."
 
-  . ${USE_ENV}/tests/cf/included
+  . ${BASH_ENV}/tests/cf/included
 }
 
 check_safe() {
