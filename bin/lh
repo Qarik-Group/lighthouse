@@ -158,6 +158,7 @@ declare -A genesis_defaults=(
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
   [BOSH_ALIAS]="\${BASE_ENV}"
+#  [CF_SKIP_SSL_VALIDATION]="false"
 )
 
 declare -A pcf_vault_defaults=( 
@@ -168,6 +169,7 @@ declare -A pcf_vault_defaults=(
   [CF_SPACE]="dev" 
   [CF_USERNAME]="admin"
   [CF_DOMAIN]="optional"
+  [CF_SKIP_SSL_VALIDATION]="false"
 )
 
 declare -A custom_variables=(
