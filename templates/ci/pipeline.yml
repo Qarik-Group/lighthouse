@@ -34,18 +34,20 @@ meta:
     name:  Stark & Wayne CI Bot
 
   lighthouse_github:
-    uri:          (( concat "git@github.com:" meta.lighthouse_github.owner "/" meta.lighthouse_github.repo ))
+    source:       (( param "Please specify the source of repository (such as git@github.com)" ))
     owner:        (( param "Please specify the name of the user / organization that owns the Github repository" ))
     repo:         (( param "Please specify the name of the Github repository" ))
-    branch:       master
+    branch:       (( param "Please specify the branch of the repository" ))
     private_key:  (( param "Please generate an SSH Deployment Key for this repo and specify it here" ))
+    uri:          (( concat meta.lighthouse_github.source ":" meta.lighthouse_github.owner "/" meta.lighthouse_github.repo ))
 
   configs_github:
-    uri:          (( concat "git@github.com:" meta.configs_github.owner "/" meta.configs_github.repo ))
+    source:       (( param "Please specify the source of repository (such as git@github.com)" ))
     owner:        (( param "Please specify the name of the user / organization that owns the Github repository" ))
     repo:         (( param "Please specify the name of the Github repository" ))
-    branch:       master
+    branch:       (( param "Please specify the branch of the repository" ))
     private_key:  (( param "Please generate an SSH Deployment Key for this repo and specify it here" ))
+    uri:          (( concat meta.configs_github.source ":" meta.configs_github.owner "/" meta.configs_github.repo ))
 
   params:
     VAULT_ADDR:             (( grab meta.vault.url ))
