@@ -3,7 +3,7 @@
 #lh_test_requires cf
 
 if [[ "" == "${LH_DIRECTORY}" ]] ; then
-    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and BASH_ENV variables"
+    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and BASE_ENV variables"
     exit 1
 fi
 
@@ -23,10 +23,10 @@ then
     validation_data="${base_validation_data}"
 fi
 
-if [[ "" != "${BASH_ENV}" ]] && [[ -e "${BASH_ENV}/${base_validation_data}" ]] ;
+if [[ "" != "${BASE_ENV}" ]] && [[ -e "${BASE_ENV}/${base_validation_data}" ]] ;
 then
-    echo "Found and using ${BASH_ENV}/${base_validation_data}"
-    validation_data="${BASH_ENV}/${base_validation_data}"
+    echo "Found and using ${BASE_ENV}/${base_validation_data}"
+    validation_data="${BASE_ENV}/${base_validation_data}"
 fi
 fab_validate_data()
 {
