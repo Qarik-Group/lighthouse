@@ -3,7 +3,7 @@
 #lh_test_requires cf
 
 if [[ "" == "${LH_DIRECTORY}" ]] ; then
-    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and BASH_ENV variables" ; exit 1
+    echo "Please run this test through Lighthouse or set the LH_DIRECTORY and BASE_ENV variables" ; exit 1
 fi
 
 . ${LH_DIRECTORY}/lib/helpers.sh
