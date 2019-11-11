@@ -1,1 +1,1 @@
-./${USE_ENV}/tests/bosh/routers.sh
+./${BASH_ENV}/tests/bosh/routers.sh
