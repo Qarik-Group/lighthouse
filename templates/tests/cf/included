@@ -1,8 +1,8 @@
-cf/apps.sh
-cf/buildpacks
-cf/envvars
-cf/feature_flags
-cf/orgs.sh
-cf/quotas.sh
-cf/services.sh
-cf/spaces.sh
+apps.sh
+buildpacks
+envvars
+feature_flags
+orgs.sh
+quotas.sh
+services.sh
+spaces.sh

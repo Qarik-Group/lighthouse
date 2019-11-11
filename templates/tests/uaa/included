@@ -1,1 +1,1 @@
-./${USE_ENV}/tests/uaa/local_users.sh
+local_users.sh
