@@ -466,6 +466,9 @@ search_tests_paths() {
 
 get_groups() {
   ls */tests/*/included 2>/dev/null | grep -v "^templates"
+  if [[ -d "${LH_BASE_ENV}/tests/" ]]; then
+    ls "${LH_BASE_ENV}"/tests/*/included 2>/dev/null
+  fi
   if [[ -d "tests" ]]; then
     ls tests/*/included 2>/dev/null
   fi
@@ -617,7 +620,11 @@ component_test() {
       test_path=$(find_test_path "${test_file}")
       if [[ $? -eq 0 ]]; then
         step "Executing ${test_path}"
-        . ${test_path}
+        if is_lh_trace_enabled dry-run,dry_run; then
+          . ${test_path}
+        else
+          echo Dry run for ${test_path}
+        fi
       else
         step "Executing ${component}/${test_path}"
         echo ${test_path}
@@ -640,7 +647,10 @@ setup_groups() {
 
 do_test() {
   setup_groups
-  (( $# == 0 )) && set -- bosh cf uaa
+  (( $# == 0 )) && {
+    cli_error "Missing group parameter"
+    test_usage
+  }
   while [[ $# -gt 0 ]]; do
     if [[ -v groups["$1"] ]]; then
       component_test "$1"
@@ -1233,10 +1243,20 @@ run_usage() {
 }
 
 list_groups() {
-  for group in $(get_groups)
+  declare group group_path path environ
+  declare prev_env=""
+  for group_path in $(get_groups)
   do
-    lh_basename $(lh_dirname "${group}")
-  done | sort -u
+    path=$(lh_dirname "${group_path}")
+    group=$(lh_basename "${path}")
+    environ=$(lh_basename $(lh_dirname $(lh_dirname "${path}")))
+    echo "${environ}" "${group}"
+  done | sort -u -k 1 -k 2 | {
+    if [[ ${prev_env} != ${environ} ]]; then
+      echo "${environ}"
+    fi
+    echo "        " "${group}"
+  }
 }
 
 test_usage() {
