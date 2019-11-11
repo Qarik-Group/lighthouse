@@ -1039,15 +1039,17 @@ meta:
     space:    $(generate_pipeline_string CF_SPACE)
 
   lighthouse_github:
-    owner:  starkandwayne
-    repo:   lighthouse
-    branch: master
+    source: ${GITHUB_SOURCE}
+    owner:  ${GITHUB_OWNER}
+    repo:   ${GITHUB_REPO}
+    branch: ${GITHUB_BRANCH}
     private_key:  (( vault "secret/pipelines/shared/github/genesis-bot:private" ))
 
   configs_github:
-    owner:  krutten
-    repo:   lighthouse_configs
-    branch: master
+    source: ${GITHUB_CONFIGS_SOURCE}
+    owner:  ${GITHUB_CONFIGS_OWNER}
+    repo:   ${GITHUB_CONFIGS_REPO}
+    branch: ${GITHUB_CONFIGS_BRANCH}
     private_key:  (( vault "secret/pipelines/shared/github/lighthouse-config-bot:private" ))
 EOF
 
@@ -1101,7 +1103,16 @@ export SAFE_AUTH="\${SAFE_AUTH:="token"}"              # can be token or github
 
 export CONCOURSE_TARGET="\${CONCOURSE_TARGET:="replace-me"}"
 export CONCOURSE_URL="\${CONCOURSE_URL:="replace-me"}"
+
 export GITHUB_OWNER="\${GITHUB_OWNER:="starkandwayne"}"  # replace if you are using your own fork
+export GITHUB_REPO="\${GITHUB_REPO:="lighthouse"}"  # replace if you are using your own fork
+export GITHUB_BRANCH="\${GITHUB_BRANCH:="master"}"  # replace if you are using your own fork
+export GITHUB_SOURCE="\${GITHUB_SOURCE:="git@github.com"}"  # replace if you are using your own fork
+
+export GITHUB_CONFIGS_OWNER="\${GITHUB_CONFIGS_OWNER:="replace-me"}"  # replace with the owner of your config files
+export GITHUB_CONFIGS_REPO="\${GITHUB_CONFIGS_REPO:="replace-me"}"  # replace with the repo of your config files
+export GITHUB_CONFIGS_BRANCH="\${GITHUB_CONFIGS_BRANCH:="master"}"  # replace with the branch of your config files
+export GITHUB_CONFIGS_SOURCE="\${GITHUB_CONFIGS_SOURCE:="git@github.com"}"  # replace if you are using your own fork
 
 # environment variables for BOSH
 # can be used to override default vault values
@@ -1120,7 +1131,7 @@ export CF_ORG="\${CF_ORG:="replace-me"}"
 export CF_SPACE="\${CF_SPACE:="replace-me"}"
 export BOSH_CLIENT="\${BOSH_CLIENT:="replace-me"}"
 # 
-export CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:="replace-me"}"
+export CF_SKIP_SSL_VALIDATION="\${CF_SKIP_SSL_VALIDATION:="replace-me"}" # set to "1" to skip SSL if needed
 export VAULT_CF_PASSWORD_PATH="\${VAULT_CF_PASSWORD_PATH:="replace-me"}" # example: secret/.....
 export VAULT_BOSH_CA_CERT_PATH="\${VAULT_BOSH_CA_CERT_PATH:="replace-me"}" # example: secret/.....
 export VAULT_BOSH_CLIENT_SECRET_PATH="\${VAULT_BOSH_CLIENT_SECRET_PATH:="replace-me"}" # example: secret/.....
