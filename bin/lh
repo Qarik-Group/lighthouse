@@ -71,12 +71,12 @@ cli_info() {
 }
 
 lh_basename() {
-  declare path=${1//+(\/)/\/} 
+  declare path=${1//+(\/)/\/}
   echo ${path##*/}
 }
 
 lh_dirname() {
-  declare path=${1//\/+(\/)/\/} 
+  declare path=${1//\/+(\/)/\/}
   declare result="${path%/*}"
   [[ -n ${path} ]] && {
     if [[ -z "${result}" ]]; then
@@ -1258,15 +1258,20 @@ list_groups() {
   declare prev_env=""
   for group_path in $(get_groups)
   do
+    
     path=$(lh_dirname "${group_path}")
     group=$(lh_basename "${path}")
     environ=$(lh_basename $(lh_dirname $(lh_dirname "${path}")))
     echo "${environ}" "${group}"
   done | sort -u -k 1 -k 2 | {
-    if [[ ${prev_env} != ${environ} ]]; then
-      echo "${environ}"
-    fi
-    echo "        " "${group}"
+    while  read environ group
+    do
+      if [[ ${prev_env} != ${environ} ]]; then
+        echo "${environ}"
+        prev_env="${environ}"
+      fi
+      echo "        " "${group}"
+    done
   }
 }
 
