@@ -647,10 +647,7 @@ setup_groups() {
 
 do_test() {
   setup_groups
-  (( $# == 0 )) && {
-    cli_error "Missing group parameter"
-    test_usage
-  }
+  (( $# == 0 )) && set -- default
   while [[ $# -gt 0 ]]; do
     if [[ -v groups["$1"] ]]; then
       component_test "$1"
