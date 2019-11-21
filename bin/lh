@@ -211,6 +211,29 @@ declare -A custom_pcf_vault_paths=(
   [BOSH_CLIENT_SECRET]="\${VAULT_PATH}/bosh/\${BASE_ENV}/BOSH_CLIENT_SECRET"
 ) 
 
+declare -A test_requires
+
+has_test_requires_line() {
+    grep -m 20 -E '^[[:blank:]]*#[[:blank:]]*lh_test_requires([[:blank:]]+[[:alnum:]_-]+)+[[:blank:]]*$' $@
+}
+
+set_test_requires()
+{ 
+  : ${@:?set_test_requires() - no test path given   $(caller 0)}
+
+  declare line, key
+  while read line 
+  do
+    for key in ${line##*lh_test_requires}
+    do
+      if [[ ! -v test_requires[$key] ]]
+      then
+        test_requires[$key]=""
+      fi
+    done
+  done < <(has_test_requires_line $@)
+}
+
 declare -A pipeline_variables
 
 set_variable() {
@@ -500,10 +523,6 @@ find_test_path() {
     return 1
   fi
   return 0
-}
-
-has_test_requires_line() {
-    grep -m 20 -E '^[[:blank:]]*#[[:blank:]]*lh_test_requires([[:blank:]]+[[:alnum:]_-]+)+[[:blank:]]*$' $@
 }
 
 interpret_included_line() {
